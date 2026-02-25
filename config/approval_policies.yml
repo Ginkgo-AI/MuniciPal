@@ -1,0 +1,105 @@
+# Approval Gate Definitions for Munici-Pal
+# Per REFERENCE.md Section 7
+#
+# All authoritative writes require Human-in-the-Loop (HITL) approval.
+# Each gate defines who must approve, timeout, and escalation path.
+
+gates:
+  permit_decision:
+    name: "Permit Decision"
+    description: "Issuance or denial of any permit"
+    trigger: "permit_issuance_or_denial"
+    required_approvers:
+      - role: department_reviewer
+        required: true
+      - role: supervisor
+        required: true
+    min_approvals: 2
+    timeout_hours: 48
+    escalation:
+      role: department_head
+      auto_escalate: true
+    classification_minimum: sensitive
+
+  foia_release:
+    name: "FOIA Release"
+    description: "Release of responsive records to a FOIA request"
+    trigger: "foia_record_release"
+    required_approvers:
+      - role: records_officer
+        required: true
+    min_approvals: 1
+    timeout_hours: 120  # 5 business days
+    escalation:
+      role: city_clerk
+      auto_escalate: true
+    classification_minimum: restricted
+
+  payment_refund:
+    name: "Payment/Refund"
+    description: "Any financial transaction including payments and refunds"
+    trigger: "financial_transaction"
+    required_approvers:
+      - role: finance_staff
+        required: true
+    min_approvals: 1
+    timeout_hours: 24
+    escalation:
+      role: finance_director
+      auto_escalate: true
+    classification_minimum: restricted
+
+  legal_correspondence:
+    name: "Legal Correspondence"
+    description: "Outbound legal communication"
+    trigger: "outbound_legal_communication"
+    required_approvers:
+      - role: city_attorney_office
+        required: true
+    min_approvals: 1
+    timeout_hours: 24
+    escalation:
+      role: city_attorney
+      auto_escalate: true
+    classification_minimum: restricted
+
+  record_modification:
+    name: "Record Modification"
+    description: "Any write to a system of record"
+    trigger: "system_of_record_write"
+    required_approvers:
+      - role: department_staff
+        required: true
+      - role: supervisor
+        required: true
+    min_approvals: 2
+    timeout_hours: 24
+    escalation:
+      role: department_head
+      auto_escalate: true
+    classification_minimum: sensitive
+
+  data_export:
+    name: "Data Export"
+    description: "Bulk data export or report generation"
+    trigger: "bulk_data_export"
+    required_approvers:
+      - role: data_steward
+        required: true
+    min_approvals: 1
+    timeout_hours: 24
+    escalation:
+      role: it_director
+      auto_escalate: true
+    classification_minimum: sensitive
+
+# Global policy settings
+policy:
+  # All approval requests must include a reason/justification
+  require_justification: true
+  # Denied requests can be re-submitted after addressing feedback
+  allow_resubmission: true
+  # Maximum number of resubmissions before requiring escalation
+  max_resubmissions: 2
+  # Log all approval actions to the audit trail
+  audit_all_actions: true

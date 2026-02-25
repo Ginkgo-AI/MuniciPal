@@ -1,0 +1,69 @@
+"""Application configuration loaded from environment and config files."""
+
+from __future__ import annotations
+
+from pydantic import Field
+from pydantic_settings import BaseSettings
+
+
+class LLMConfig(BaseSettings):
+    """LLM provider configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_LLM_"}
+
+    provider: str = "ollama"
+    base_url: str = "http://localhost:11434"
+    model: str = "llama3.1:8b"
+    timeout_seconds: int = 30
+    max_retries: int = 1
+
+
+class VectorDBConfig(BaseSettings):
+    """Vector database configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_VECTORDB_"}
+
+    provider: str = "chromadb"
+    host: str = "localhost"
+    port: int = 8000
+    collection_prefix: str = "municipal"
+
+
+class AuditConfig(BaseSettings):
+    """Audit logging configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_AUDIT_"}
+
+    log_dir: str = "data/audit"
+    hash_algorithm: str = "sha256"
+    secondary_location: str | None = None
+
+
+class EvalConfig(BaseSettings):
+    """Evaluation harness configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_EVAL_"}
+
+    golden_dataset_dir: str = "eval/golden_datasets"
+    accuracy_target: float = 0.90
+    citation_precision_target: float = 0.95
+    citation_recall_target: float = 0.85
+    hallucination_max: float = 0.05
+    refusal_rate_target: float = 0.90
+    latency_p50_target_ms: float = 3000.0
+    latency_p95_target_ms: float = 8000.0
+
+
+class Settings(BaseSettings):
+    """Root application settings."""
+
+    model_config = {"env_prefix": "MUNICIPAL_"}
+
+    environment: str = "development"
+    debug: bool = False
+    log_level: str = "INFO"
+
+    llm: LLMConfig = Field(default_factory=LLMConfig)
+    vectordb: VectorDBConfig = Field(default_factory=VectorDBConfig)
+    audit: AuditConfig = Field(default_factory=AuditConfig)
+    eval: EvalConfig = Field(default_factory=EvalConfig)

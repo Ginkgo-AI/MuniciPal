@@ -1,0 +1,35 @@
+name: Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Path to golden dataset JSON"
+        default: "eval/golden_datasets/sample.json"
+        required: true
+  schedule:
+    - cron: "0 6 * * 1"  # Weekly Monday 6am UTC
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+
+      - name: Run evaluation harness
+        env:
+          MUNICIPAL_LLM_PROVIDER: ollama
+          MUNICIPAL_LLM_BASE_URL: http://localhost:11434
+          MUNICIPAL_LLM_MODEL: llama3.1:8b
+          DATASET_PATH: ${{ github.event.inputs.dataset || 'eval/golden_datasets/sample.json' }}
+        run: python scripts/run_eval.py --dataset "$DATASET_PATH" --output eval/results/latest.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: eval/results/latest.json

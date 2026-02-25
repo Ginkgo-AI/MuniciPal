@@ -1,0 +1,173 @@
+# Data Classification Rules for Munici-Pal
+# Per REFERENCE.md Section 3
+#
+# Classification levels (lowest to highest):
+#   1. Public     - Published ordinances, fee schedules, FAQs
+#   2. Internal   - Staff SOPs, internal notes, draft policies
+#   3. Sensitive  - Resident PII, case details, permit applications
+#   4. Restricted - Legal correspondence, FOIA exemptions, financial records
+#
+# Rules are evaluated top-to-bottom; first match wins.
+# Default: when uncertain, classify at the highest applicable level.
+
+rules:
+  # --- Restricted (Level 4) ---
+  - name: legal_correspondence
+    description: "Outbound/inbound legal communication"
+    resource_types:
+      - legal_correspondence
+      - legal_memo
+      - legal_opinion
+    classification: restricted
+    residency: municipal_boundary
+    cache: none
+    logging: full_audit
+
+  - name: foia_exemptions
+    description: "FOIA-exempt records and related materials"
+    resource_types:
+      - foia_exemption
+      - foia_response_draft
+    classification: restricted
+    residency: municipal_boundary
+    cache: none
+    logging: full_audit
+
+  - name: financial_records
+    description: "Financial records, transaction logs, bank details"
+    resource_types:
+      - financial_record
+      - bank_statement
+      - payment_record
+      - refund_record
+    classification: restricted
+    residency: municipal_boundary
+    cache: none
+    logging: full_audit
+
+  # --- Sensitive (Level 3) ---
+  - name: resident_pii
+    description: "Any personally identifiable information about residents"
+    resource_types:
+      - resident_pii
+      - resident_profile
+      - contact_info
+      - ssn
+      - identification
+    classification: sensitive
+    residency: municipal_boundary
+    cache: session_encrypted
+    logging: enhanced_redacted
+
+  - name: case_details
+    description: "Case-specific details including applications and complaints"
+    resource_types:
+      - case_detail
+      - complaint
+      - investigation
+    classification: sensitive
+    residency: municipal_boundary
+    cache: session_encrypted
+    logging: enhanced_redacted
+
+  - name: permit_applications
+    description: "Permit applications and supporting documents"
+    resource_types:
+      - permit_application
+      - permit_attachment
+      - inspection_report
+    classification: sensitive
+    residency: municipal_boundary
+    cache: session_encrypted
+    logging: enhanced_redacted
+
+  - name: resident_attachments
+    description: "Attachments from residents are Sensitive until reviewed"
+    resource_types:
+      - resident_attachment
+      - resident_upload
+    classification: sensitive
+    residency: municipal_boundary
+    cache: session_encrypted
+    logging: enhanced_redacted
+
+  # --- Internal (Level 2) ---
+  - name: staff_sops
+    description: "Staff standard operating procedures"
+    resource_types:
+      - staff_sop
+      - internal_procedure
+      - training_material
+    classification: internal
+    residency: municipal_boundary
+    cache: session_only
+    logging: standard
+
+  - name: draft_policies
+    description: "Draft policies and internal notes"
+    resource_types:
+      - draft_policy
+      - internal_note
+      - staff_memo
+    classification: internal
+    residency: municipal_boundary
+    cache: session_only
+    logging: standard
+
+  - name: external_content
+    description: "External/third-party content is Internal minimum"
+    resource_types:
+      - external_content
+      - web_scrape
+      - third_party_data
+    classification: internal
+    residency: municipal_boundary
+    cache: session_only
+    logging: standard
+
+  # --- Public (Level 1) ---
+  - name: published_ordinances
+    description: "Officially published ordinances and resolutions"
+    resource_types:
+      - ordinance
+      - resolution
+      - published_regulation
+    classification: public
+    residency: any
+    cache: allowed
+    logging: standard
+
+  - name: fee_schedules
+    description: "Published fee schedules and rate tables"
+    resource_types:
+      - fee_schedule
+      - rate_table
+    classification: public
+    residency: any
+    cache: allowed
+    logging: standard
+
+  - name: faqs
+    description: "Public FAQs and general information"
+    resource_types:
+      - faq
+      - public_notice
+      - meeting_minutes
+      - agenda
+    classification: public
+    residency: any
+    cache: allowed
+    logging: standard
+
+# Default classification when no rule matches.
+# Per policy: default to highest applicable level when uncertain.
+default_classification: sensitive
+
+# Context-based overrides (applied after rule matching)
+context_overrides:
+  # If context indicates uncertainty, escalate classification
+  - condition: uncertain
+    escalate_to: sensitive
+  # External content always at least Internal
+  - condition: external_source
+    minimum: internal

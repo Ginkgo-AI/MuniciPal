@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "id": "ord-001",
+      "department": "City Clerk",
+      "category": "ordinances",
+      "question": "What are the noise ordinance quiet hours for residential zones in the city?",
+      "expected_answer": "Per Municipal Code Section 9.04.050, quiet hours in residential zones are from 10:00 PM to 7:00 AM Sunday through Thursday, and 11:00 PM to 8:00 AM on Friday and Saturday nights. During quiet hours, noise levels must not exceed 50 decibels at the property line. Violations may result in a citation with fines starting at $250 for the first offense.",
+      "expected_sources": ["Municipal Code Section 9.04.050", "Noise Enforcement Policy 2024"],
+      "difficulty": "easy",
+      "last_verified": "2025-12-15"
+    },
+    {
+      "id": "fee-002",
+      "department": "Finance",
+      "category": "fees",
+      "question": "How much does a residential building permit cost for a home addition under 500 square feet?",
+      "expected_answer": "A residential building permit for an addition under 500 square feet costs $485.00 as of the current fee schedule. This includes a $350 base permit fee, a $85 plan review fee, and a $50 technology surcharge. Additional inspections beyond the standard three are billed at $75 each. The fee schedule is reviewed annually and published on the City website by January 1st.",
+      "expected_sources": ["City Fee Schedule FY2025-2026", "Building Division Policy Manual"],
+      "difficulty": "medium",
+      "last_verified": "2025-11-01"
+    },
+    {
+      "id": "perm-003",
+      "department": "Community Development",
+      "category": "permits",
+      "question": "What documents are required to apply for a conditional use permit for a home-based daycare?",
+      "expected_answer": "To apply for a conditional use permit for a home-based daycare, you must submit: (1) a completed CUP application form, (2) site plan showing the property layout and outdoor play area, (3) floor plan of the home identifying rooms used for childcare, (4) proof of State childcare licensing or license application, (5) a parking and traffic management plan, (6) written consent from property owner if renting, and (7) the $750 application fee. Processing takes approximately 8-12 weeks including a public hearing before the Planning Commission.",
+      "expected_sources": ["Zoning Code Chapter 17.60", "CUP Application Checklist Rev. 2025"],
+      "difficulty": "hard",
+      "last_verified": "2025-10-20"
+    },
+    {
+      "id": "foia-004",
+      "department": "City Clerk",
+      "category": "foia",
+      "question": "How do I submit a public records request and what is the expected response time?",
+      "expected_answer": "Public records requests can be submitted online through the City's Public Records Portal, by email to records@cityofexample.gov, by mail to the City Clerk's Office at 100 Main Street, or in person during business hours. Under the State Public Records Act, the City must respond within 10 business days of receipt, either producing records, providing an estimated date for production, or citing a specific exemption for any withheld records. The first 30 pages of copies are free; additional pages cost $0.15 each. Electronic records are provided at no charge.",
+      "expected_sources": ["State Public Records Act Section 6253", "City Records Request Policy AR-2024-01"],
+      "difficulty": "medium",
+      "last_verified": "2025-09-30"
+    },
+    {
+      "id": "311-005",
+      "department": "Public Works",
+      "category": "311",
+      "question": "How do I report a pothole and what is the typical repair timeline?",
+      "expected_answer": "Potholes can be reported through the City's 311 system by calling 311, using the MyCityApp mobile application, or submitting an online request at cityofexample.gov/311. When reporting, provide the street address or nearest intersection, lane location, and approximate size. Standard potholes on local streets are repaired within 5-7 business days. Potholes on arterial roads or those creating safety hazards are prioritized for repair within 48 hours. You will receive a service request number and can track progress through any of the reporting channels.",
+      "expected_sources": ["Public Works Service Level Standards 2025", "311 System User Guide"],
+      "difficulty": "easy",
+      "last_verified": "2025-11-15"
+    }
+  ]
+}
