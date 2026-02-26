@@ -74,3 +74,18 @@ class ValidationEngine:
             valid=len(all_errors) == 0,
             errors=all_errors,
         )
+
+    def validate_cross_field(
+        self, wizard_id: str, data: dict[str, Any]
+    ) -> ValidationResult:
+        """Run cross-field validation rules for a wizard's merged data."""
+        from municipal.intake.validators.cross_field import CrossFieldValidator
+
+        if not hasattr(self, "_cross_field_validator"):
+            self._cross_field_validator = CrossFieldValidator()
+
+        errors = self._cross_field_validator.validate(wizard_id, data)
+        return ValidationResult(
+            valid=len(errors) == 0,
+            errors=errors,
+        )

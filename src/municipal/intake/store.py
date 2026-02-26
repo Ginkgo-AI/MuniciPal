@@ -42,3 +42,12 @@ class IntakeStore:
             c for c in self._cases.values()
             if c.session_id == session_id
         ]
+
+    def list_all_cases(self) -> list[Case]:
+        return list(self._cases.values())
+
+    def list_cases_by_wizard(self, wizard_id: str) -> list[Case]:
+        return [
+            c for c in self._cases.values()
+            if c.wizard_id == wizard_id
+        ]

@@ -283,6 +283,13 @@ class WizardEngine:
         for step_state in state.steps:
             merged_data.update(step_state.data)
 
+        # Run cross-field validation
+        cross_result = self._validation.validate_cross_field(state.wizard_id, merged_data)
+        if not cross_result.valid:
+            raise ValueError(
+                f"Cross-field validation failed: {cross_result.errors}"
+            )
+
         # Determine case classification (max of all field classifications)
         classification = self._compute_classification(defn)
 

@@ -1,0 +1,39 @@
+# Cross-field validation rules per wizard type
+wizards:
+  permit_application:
+    - type: conditional_required
+      field_a: property_type
+      value: "Commercial"
+      field_b: contractor_name
+      message: "Contractor name is required for commercial properties."
+
+    - type: numeric_relationship
+      field_a: estimated_cost
+      field_b: estimated_cost
+      operator: ">="
+      message: "Estimated cost must be a positive value."
+
+  foia_request:
+    - type: date_order
+      field_a: date_range_start
+      field_b: date_range_end
+      message: "Date range end must be on or after date range start."
+
+  service_request_311:
+    - type: conditional_required
+      field_a: category
+      value: "pothole"
+      field_b: location
+      message: "Location is required for pothole reports."
+
+    - type: conditional_required
+      field_a: category
+      value: "streetlight"
+      field_b: location
+      message: "Location is required for streetlight reports."
+
+    - type: conditional_required
+      field_a: category
+      value: "water"
+      field_b: location
+      message: "Location is required for water issue reports."

@@ -1,0 +1,46 @@
+# Inconsistency detection rules per wizard type
+
+wizards:
+  permit_application:
+    - type: value_range
+      field: estimated_cost
+      context_field: property_type
+      context_value: "Residential"
+      max_value: 500000
+      message: "Residential permit with estimated cost over $500,000 is unusual — verify property type."
+      severity: warning
+
+    - type: temporal_logic
+      field: start_date
+      expected: future
+      message: "Planned start date should be in the future for new permit applications."
+      severity: warning
+
+    - type: completeness
+      required_fields:
+        - applicant_name
+        - applicant_email
+        - property_address
+        - project_description
+      message: "Missing required fields for permit approval."
+      severity: info
+
+  foia_request:
+    - type: completeness
+      required_fields:
+        - requester_name
+        - requester_email
+        - records_description
+      message: "Missing required fields for FOIA processing."
+      severity: info
+
+  service_request_311:
+    - type: completeness
+      required_fields:
+        - category
+        - location
+        - description
+        - contact_name
+        - contact_email
+      message: "Missing required fields for service request processing."
+      severity: info

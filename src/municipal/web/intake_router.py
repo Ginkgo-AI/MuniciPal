@@ -242,6 +242,30 @@ async def validate_field(body: ValidateFieldRequest, request: Request) -> Valida
     raise HTTPException(status_code=404, detail="Field not found")
 
 
+class CrossFieldValidationResponse(BaseModel):
+    valid: bool
+    errors: dict[str, list[str]] = Field(default_factory=dict)
+
+
+@router.post("/api/intake/state/{state_id}/validate")
+async def validate_cross_field(state_id: str, request: Request) -> CrossFieldValidationResponse:
+    """Run cross-field validation on a wizard state's merged data."""
+    store = request.app.state.intake_store
+    validation = request.app.state.validation_engine
+
+    state = store.get_wizard_state(state_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"Wizard state {state_id!r} not found")
+
+    # Merge all step data
+    merged_data: dict[str, Any] = {}
+    for s in state.steps:
+        merged_data.update(s.data)
+
+    result = validation.validate_cross_field(state.wizard_id, merged_data)
+    return CrossFieldValidationResponse(valid=result.valid, errors=result.errors)
+
+
 # --- Case endpoints ---
 
 

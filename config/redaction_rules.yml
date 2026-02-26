@@ -1,0 +1,46 @@
+# Redaction rules for FOIA response preparation
+# Staff reviews suggestions — no automatic redaction
+
+classification_threshold: sensitive
+
+pattern_rules:
+  - pattern: '\d{3}-\d{2}-\d{4}'
+    reason: "Possible Social Security Number detected"
+    confidence: high
+    classification: restricted
+
+  - pattern: '\(\d{3}\)\s?\d{3}-\d{4}|\d{3}-\d{3}-\d{4}|\d{10}'
+    reason: "Possible phone number detected"
+    confidence: medium
+    classification: sensitive
+
+  - pattern: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    reason: "Email address detected"
+    confidence: high
+    classification: sensitive
+
+  - pattern: '\d{1,5}\s+\w+\s+(St|Ave|Blvd|Dr|Ln|Rd|Way|Ct|Pl|Cir|Pkwy|Ter)\b'
+    reason: "Possible street address detected"
+    confidence: low
+    classification: internal
+
+field_rules:
+  - field_pattern: '(ssn|social_security)'
+    reason: "SSN field should be redacted"
+    confidence: high
+    classification: restricted
+
+  - field_pattern: '(password|secret|token)'
+    reason: "Credential field should be redacted"
+    confidence: high
+    classification: restricted
+
+  - field_pattern: '(phone|mobile|fax)'
+    reason: "Phone number field may need redaction"
+    confidence: medium
+    classification: sensitive
+
+  - field_pattern: '(email|e_mail)'
+    reason: "Email field may need redaction"
+    confidence: medium
+    classification: sensitive

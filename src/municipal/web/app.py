@@ -49,6 +49,11 @@ from municipal.web.mission_control import (
 )
 from municipal.web.mission_control_v1 import MetricsService, SessionTakeoverManager
 from municipal.web.notification_router import router as notification_router
+from municipal.web.review_router import router as review_router
+from municipal.review.redaction import RedactionEngine
+from municipal.review.inconsistency import InconsistencyDetector
+from municipal.review.summary import SummaryEngine
+from municipal.review.sunshine import SunshineReportGenerator
 
 _WEB_DIR = Path(__file__).parent
 _TEMPLATES_DIR = _WEB_DIR / "templates"
@@ -234,6 +239,25 @@ def create_app(
     app.state.metrics_service = metrics_service
     app.state.takeover_manager = takeover_manager
 
+    # Phase 4: Review services
+    redaction_engine = RedactionEngine()
+    inconsistency_detector = InconsistencyDetector()
+    summary_engine = SummaryEngine(
+        intake_store=intake_store,
+        graph_store=graph_store,
+        wizard_definitions=wizard_engine.wizard_definitions,
+        approval_gate=approval_gate,
+    )
+    sunshine_generator = SunshineReportGenerator(
+        intake_store=intake_store,
+        approval_gate=approval_gate,
+        notification_store=notification_store,
+    )
+    app.state.redaction_engine = redaction_engine
+    app.state.inconsistency_detector = inconsistency_detector
+    app.state.summary_engine = summary_engine
+    app.state.sunshine_generator = sunshine_generator
+
     # Phase 3: Auth middleware
     app.add_middleware(AuthMiddleware)
 
@@ -247,6 +271,9 @@ def create_app(
     app.include_router(bridge_router)
     app.include_router(notification_router)
     app.include_router(graph_router)
+
+    # Phase 4: Review router
+    app.include_router(review_router)
 
     # Templates and static files
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
