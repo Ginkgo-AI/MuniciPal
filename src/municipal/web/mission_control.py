@@ -1,7 +1,8 @@
 """Mission Control v0 — Staff dashboard for Munici-Pal.
 
 Provides routes for the staff-facing control plane: session viewer,
-audit log viewer, feedback workflow, and shadow mode toggle.
+audit log viewer, feedback workflow, shadow mode toggle, shadow
+comparisons, model promotion, and staff messaging.
 Per ROADMAP.md Section 5.1.
 """
 
@@ -17,6 +18,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+
+from municipal.core.config import LLMConfig
 
 _WEB_DIR = Path(__file__).parent
 _TEMPLATES_DIR = _WEB_DIR / "templates"
@@ -109,11 +112,53 @@ class FeedbackStore:
         self._entries.clear()
 
 
+class ShadowComparisonResult(BaseModel):
+    """Result of a shadow mode comparison between production and candidate models."""
+
+    comparison_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    user_message: str
+    production_response: str
+    candidate_response: str
+    diverged: bool = False
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ShadowComparisonStore:
+    """In-memory store for shadow comparison results."""
+
+    def __init__(self) -> None:
+        self._comparisons: list[ShadowComparisonResult] = []
+
+    def add(self, result: ShadowComparisonResult) -> ShadowComparisonResult:
+        self._comparisons.append(result)
+        return result
+
+    def list_all(self) -> list[ShadowComparisonResult]:
+        return sorted(self._comparisons, key=lambda c: c.timestamp, reverse=True)
+
+    def get_for_session(self, session_id: str) -> list[ShadowComparisonResult]:
+        return [c for c in self._comparisons if c.session_id == session_id]
+
+    def stats(self) -> dict[str, Any]:
+        total = len(self._comparisons)
+        diverged = sum(1 for c in self._comparisons if c.diverged)
+        return {
+            "total_comparisons": total,
+            "diverged_count": diverged,
+            "divergence_rate": round(diverged / total, 4) if total > 0 else 0.0,
+        }
+
+    def clear(self) -> None:
+        self._comparisons.clear()
+
+
 class ShadowModeManager:
     """In-memory tracker for shadow mode on sessions."""
 
     def __init__(self) -> None:
         self._shadow_sessions: set[str] = set()
+        self.shadow_llm_config: LLMConfig | None = None
 
     def enable(self, session_id: str) -> None:
         """Enable shadow mode for a session."""
@@ -488,3 +533,127 @@ async def api_release_session(session_id: str, request: Request) -> dict[str, An
     if takeover_mgr is None:
         raise HTTPException(status_code=503, detail="Takeover manager not available")
     return takeover_mgr.release(session_id)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Shadow comparisons
+# ---------------------------------------------------------------------------
+
+
+def _get_comparison_store(request: Request) -> ShadowComparisonStore:
+    store = getattr(request.app.state, "comparison_store", None)
+    if store is None:
+        raise HTTPException(status_code=503, detail="Comparison store not available")
+    return store
+
+
+@router.get("/api/staff/shadow/comparisons")
+async def api_shadow_comparisons(request: Request) -> list[dict[str, Any]]:
+    """List all shadow comparison results."""
+    store = _get_comparison_store(request)
+    return [c.model_dump(mode="json") for c in store.list_all()]
+
+
+@router.get("/api/staff/shadow/stats")
+async def api_shadow_stats(request: Request) -> dict[str, Any]:
+    """Get shadow mode divergence statistics."""
+    store = _get_comparison_store(request)
+    return store.stats()
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Model promotion
+# ---------------------------------------------------------------------------
+
+
+class CandidateModelRequest(BaseModel):
+    """Request body for registering a candidate model."""
+
+    provider: str = "vllm"
+    base_url: str
+    model: str
+    api_key: str | None = None
+    max_tokens: int = 2048
+
+
+@router.post("/api/staff/models/candidate")
+async def api_set_candidate(body: CandidateModelRequest, request: Request) -> dict[str, Any]:
+    """Register a candidate model for shadow testing."""
+    model_registry = getattr(request.app.state, "model_registry", None)
+    if model_registry is None:
+        raise HTTPException(status_code=503, detail="Model registry not available")
+
+    config = LLMConfig(
+        provider=body.provider,
+        base_url=body.base_url,
+        model=body.model,
+        api_key=body.api_key,
+        max_tokens=body.max_tokens,
+    )
+    model_registry.set_candidate(config)
+
+    # Also update shadow manager's LLM config
+    shadow_manager = get_shadow_manager(request)
+    shadow_manager.shadow_llm_config = config
+
+    return {"status": "candidate_registered", "model": body.model, "base_url": body.base_url}
+
+
+@router.get("/api/staff/models")
+async def api_list_models(request: Request) -> dict[str, Any]:
+    """List production and candidate model configurations."""
+    model_registry = getattr(request.app.state, "model_registry", None)
+    if model_registry is None:
+        raise HTTPException(status_code=503, detail="Model registry not available")
+    return model_registry.summary()
+
+
+@router.post("/api/staff/models/promote")
+async def api_promote_candidate(request: Request) -> dict[str, Any]:
+    """Promote the candidate model to production."""
+    model_registry = getattr(request.app.state, "model_registry", None)
+    if model_registry is None:
+        raise HTTPException(status_code=503, detail="Model registry not available")
+    try:
+        promoted = model_registry.promote_candidate()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "promoted", "production": promoted.model_dump()}
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Staff sends message to session
+# ---------------------------------------------------------------------------
+
+
+class StaffMessageRequest(BaseModel):
+    """Request body for staff sending a message to a session."""
+
+    staff_id: str = "staff"
+    message: str
+
+
+@router.post("/api/staff/sessions/{session_id}/message")
+async def api_staff_message(
+    session_id: str, body: StaffMessageRequest, request: Request
+) -> dict[str, Any]:
+    """Staff sends a direct message to a session."""
+    session_manager = request.app.state.session_manager
+    session = session_manager.get_session(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"Session {session_id!r} not found")
+
+    from municipal.chat.session import ChatMessage, MessageRole
+
+    msg = ChatMessage(
+        role=MessageRole.ASSISTANT,
+        content=f"[Staff: {body.staff_id}] {body.message}",
+    )
+    session_manager.add_message(session_id, msg)
+
+    return {
+        "session_id": session_id,
+        "staff_id": body.staff_id,
+        "message": body.message,
+        "timestamp": msg.timestamp.isoformat(),
+    }

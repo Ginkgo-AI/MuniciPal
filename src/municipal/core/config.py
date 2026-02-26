@@ -16,6 +16,9 @@ class LLMConfig(BaseSettings):
     model: str = "llama3.1:8b"
     timeout_seconds: int = 30
     max_retries: int = 1
+    api_key: str | None = None
+    max_tokens: int = 2048
+    top_p: float | None = None
 
 
 class VectorDBConfig(BaseSettings):

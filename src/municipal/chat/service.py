@@ -6,12 +6,19 @@ coordinates the RAG pipeline call, session bookkeeping, and audit trail.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from typing import Any, TYPE_CHECKING
 
 from municipal.chat.session import ChatMessage, MessageRole, SessionManager
 from municipal.core.types import AuditEvent, DataClassification
 from municipal.governance.audit import AuditLogger
 from municipal.rag.pipeline import RAGPipeline
+
+if TYPE_CHECKING:
+    from municipal.llm.client import LLMClient
+    from municipal.web.mission_control import ShadowComparisonStore, ShadowModeManager
+    from municipal.web.mission_control_v1 import SessionTakeoverManager
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +29,11 @@ _KILL_SWITCH_MESSAGE = (
     "this question."
 )
 
+_TAKEOVER_MESSAGE = (
+    "This session is currently being handled by a staff member. "
+    "Please wait for their response."
+)
+
 
 class ChatService:
     """Orchestrates chat interactions across RAG, sessions, and audit.
@@ -30,6 +42,9 @@ class ChatService:
         rag_pipeline: The RAGPipeline for answering questions.
         session_manager: The SessionManager for session state.
         audit_logger: The AuditLogger for governance logging.
+        shadow_manager: Optional ShadowModeManager for shadow comparisons.
+        comparison_store: Optional ShadowComparisonStore for logging comparisons.
+        takeover_manager: Optional SessionTakeoverManager for staff takeover.
     """
 
     def __init__(
@@ -37,10 +52,16 @@ class ChatService:
         rag_pipeline: RAGPipeline,
         session_manager: SessionManager,
         audit_logger: AuditLogger,
+        shadow_manager: ShadowModeManager | None = None,
+        comparison_store: ShadowComparisonStore | None = None,
+        takeover_manager: SessionTakeoverManager | None = None,
     ) -> None:
         self._rag = rag_pipeline
         self._sessions = session_manager
         self._audit = audit_logger
+        self._shadow_manager = shadow_manager
+        self._comparison_store = comparison_store
+        self._takeover_manager = takeover_manager
 
     async def respond(
         self,
@@ -51,11 +72,13 @@ class ChatService:
         """Process a user message and return an assistant response.
 
         Steps:
-            1. Record the user message in the session.
-            2. Call the RAG pipeline to generate a cited answer.
-            3. If confidence is low, append the kill-switch disclaimer.
-            4. Record the assistant response in the session.
-            5. Log the interaction to the audit trail.
+            1. Check if session is taken over by staff; if so, return placeholder.
+            2. Record the user message in the session.
+            3. Call the RAG pipeline to generate a cited answer.
+            4. If confidence is low, append the kill-switch disclaimer.
+            5. Record the assistant response in the session.
+            6. Log the interaction to the audit trail.
+            7. If shadow mode active, fire-and-forget comparison.
 
         Args:
             session_id: The UUID of the chat session.
@@ -72,6 +95,20 @@ class ChatService:
         session = self._sessions.get_session(session_id)
         if session is None:
             raise KeyError(f"Session {session_id!r} not found")
+
+        # Check for staff takeover
+        if self._takeover_manager and self._takeover_manager.is_taken_over(session_id):
+            user_msg = ChatMessage(role=MessageRole.USER, content=user_message)
+            self._sessions.add_message(session_id, user_msg)
+
+            takeover_msg = ChatMessage(
+                role=MessageRole.ASSISTANT,
+                content=_TAKEOVER_MESSAGE,
+                confidence=1.0,
+                low_confidence=False,
+            )
+            self._sessions.add_message(session_id, takeover_msg)
+            return takeover_msg
 
         # 1. Log the user message
         user_msg = ChatMessage(role=MessageRole.USER, content=user_message)
@@ -144,4 +181,49 @@ class ChatService:
             )
         )
 
+        # 6. Fire-and-forget shadow comparison if active
+        if (
+            self._shadow_manager
+            and self._comparison_store
+            and self._shadow_manager.is_active(session_id)
+            and self._shadow_manager.shadow_llm_config is not None
+        ):
+            asyncio.create_task(
+                self._run_shadow_comparison(
+                    session_id=session_id,
+                    user_message=user_message,
+                    production_response=answer_text,
+                )
+            )
+
         return assistant_msg
+
+    async def _run_shadow_comparison(
+        self,
+        session_id: str,
+        user_message: str,
+        production_response: str,
+    ) -> None:
+        """Run the candidate model and log a comparison result."""
+        from municipal.llm.client import create_llm_client
+        from municipal.web.mission_control import ShadowComparisonResult
+
+        try:
+            config = self._shadow_manager.shadow_llm_config  # type: ignore[union-attr]
+            client = create_llm_client(config)
+            try:
+                candidate_response = await client.generate(user_message)
+            finally:
+                await client.close()
+
+            diverged = candidate_response.strip() != production_response.strip()
+            result = ShadowComparisonResult(
+                session_id=session_id,
+                user_message=user_message,
+                production_response=production_response,
+                candidate_response=candidate_response,
+                diverged=diverged,
+            )
+            self._comparison_store.add(result)  # type: ignore[union-attr]
+        except Exception:
+            logger.exception("Shadow comparison failed for session %s", session_id)

@@ -1,0 +1,55 @@
+# Fee schedules for Munici-Pal finance engine
+# Per ROADMAP.md Section 6.5 — Deterministic fee calculation
+
+schedules:
+  permit:
+    - name: "Building"
+      description: "Building permit fee"
+      base_fee: 200.00
+      per_unit_fee: 0.10
+      unit_label: "sqft"
+      free_units: 0
+
+    - name: "Electrical"
+      description: "Electrical permit fee"
+      base_fee: 150.00
+      per_unit_fee: 0.0
+      unit_label: ""
+      free_units: 0
+
+    - name: "Plumbing"
+      description: "Plumbing permit fee"
+      base_fee: 125.00
+      per_unit_fee: 0.0
+      unit_label: ""
+      free_units: 0
+
+    - name: "Mechanical"
+      description: "Mechanical/HVAC permit fee"
+      base_fee: 175.00
+      per_unit_fee: 0.0
+      unit_label: ""
+      free_units: 0
+
+    - name: "Demolition"
+      description: "Demolition permit fee"
+      base_fee: 300.00
+      per_unit_fee: 0.05
+      unit_label: "sqft"
+      free_units: 0
+
+  foia:
+    - name: "FOIA copies"
+      description: "Per-page copy fee for FOIA responses"
+      base_fee: 0.0
+      per_unit_fee: 0.15
+      unit_label: "page"
+      free_units: 50
+
+  311:
+    - name: "311 service request"
+      description: "No fee for 311 service requests"
+      base_fee: 0.0
+      per_unit_fee: 0.0
+      unit_label: ""
+      free_units: 0

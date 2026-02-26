@@ -1,13 +1,51 @@
-"""Mission Control v1 services: metrics, session takeover."""
+"""Mission Control v1 services: metrics, session takeover, LLM latency tracking."""
 
 from __future__ import annotations
 
+import time
+from collections import deque
 from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from municipal.bridge.models import ConnectionStatus
+
+
+class LLMLatencyTracker:
+    """Rolling window tracker for LLM response latencies (p50/p95)."""
+
+    def __init__(self, window_size: int = 100) -> None:
+        self._latencies: deque[float] = deque(maxlen=window_size)
+
+    def record(self, latency_ms: float) -> None:
+        self._latencies.append(latency_ms)
+
+    def p50(self) -> float | None:
+        if not self._latencies:
+            return None
+        return self._percentile(50)
+
+    def p95(self) -> float | None:
+        if not self._latencies:
+            return None
+        return self._percentile(95)
+
+    def _percentile(self, pct: float) -> float:
+        sorted_vals = sorted(self._latencies)
+        n = len(sorted_vals)
+        idx = (pct / 100.0) * (n - 1)
+        lower = int(idx)
+        upper = min(lower + 1, n - 1)
+        frac = idx - lower
+        return round(sorted_vals[lower] * (1 - frac) + sorted_vals[upper] * frac, 2)
+
+    @property
+    def count(self) -> int:
+        return len(self._latencies)
+
+    def clear(self) -> None:
+        self._latencies.clear()
 
 
 class MetricsSnapshot(BaseModel):
@@ -20,6 +58,9 @@ class MetricsSnapshot(BaseModel):
     approved_count: int = 0
     denied_count: int = 0
     adapter_health: dict[str, str] = Field(default_factory=dict)
+    llm_latency_p50_ms: float | None = None
+    llm_latency_p95_ms: float | None = None
+    shadow_divergence_rate: float | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -32,11 +73,15 @@ class MetricsService:
         intake_store: Any = None,
         approval_gate: Any = None,
         adapter_registry: Any = None,
+        llm_tracker: LLMLatencyTracker | None = None,
+        comparison_store: Any = None,
     ) -> None:
         self._sessions = session_manager
         self._intake = intake_store
         self._approval = approval_gate
         self._registry = adapter_registry
+        self._llm_tracker = llm_tracker
+        self._comparison_store = comparison_store
 
     def snapshot(self) -> MetricsSnapshot:
         sessions = self._sessions.list_active_sessions() if self._sessions else []
@@ -65,6 +110,15 @@ class MetricsService:
                 for name, status in self._registry.health_check_all().items()
             }
 
+        llm_p50 = self._llm_tracker.p50() if self._llm_tracker else None
+        llm_p95 = self._llm_tracker.p95() if self._llm_tracker else None
+
+        shadow_divergence: float | None = None
+        if self._comparison_store:
+            stats = self._comparison_store.stats()
+            if stats["total_comparisons"] > 0:
+                shadow_divergence = stats["divergence_rate"]
+
         return MetricsSnapshot(
             total_sessions=total_sessions,
             active_sessions=total_sessions,
@@ -73,6 +127,9 @@ class MetricsService:
             approved_count=approved,
             denied_count=denied,
             adapter_health=adapter_health,
+            llm_latency_p50_ms=llm_p50,
+            llm_latency_p95_ms=llm_p95,
+            shadow_divergence_rate=shadow_divergence,
         )
 
 

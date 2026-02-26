@@ -1,0 +1,15 @@
+# Statutory deadline rules for Munici-Pal
+# Per ROADMAP.md — deterministic deadline computation
+
+deadlines:
+  permit:
+    statutory_days: 30
+    business_days_only: true
+
+  foia:
+    statutory_days: 5
+    business_days_only: true
+
+  311:
+    statutory_days: 14
+    business_days_only: false

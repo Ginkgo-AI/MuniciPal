@@ -42,12 +42,23 @@ from municipal.rag.pipeline import RAGPipeline, create_rag_pipeline
 from municipal.web.bridge_router import router as bridge_router
 from municipal.web.graph_router import router as graph_router
 from municipal.web.intake_router import router as intake_router
+from municipal.finance.deadlines import DeadlineEngine
+from municipal.finance.fees import FeeEngine
+from municipal.finance.taxes import TaxEngine
+from municipal.llm.registry import ModelRegistry
+from municipal.web.finance_router import PaymentStore
+from municipal.web.finance_router import router as finance_router
 from municipal.web.mission_control import (
     FeedbackStore,
+    ShadowComparisonStore,
     ShadowModeManager,
     router as mission_control_router,
 )
-from municipal.web.mission_control_v1 import MetricsService, SessionTakeoverManager
+from municipal.web.mission_control_v1 import (
+    LLMLatencyTracker,
+    MetricsService,
+    SessionTakeoverManager,
+)
 from municipal.web.notification_router import router as notification_router
 from municipal.web.review_router import router as review_router
 from municipal.review.redaction import RedactionEngine
@@ -157,10 +168,18 @@ def create_app(
     if rag_pipeline is None:
         rag_pipeline = create_rag_pipeline(settings)
 
+    # Phase 5: Shadow + takeover managers (created early for ChatService)
+    shadow_manager = ShadowModeManager()
+    comparison_store = ShadowComparisonStore()
+    takeover_manager = SessionTakeoverManager()
+
     chat_service = ChatService(
         rag_pipeline=rag_pipeline,
         session_manager=session_manager,
         audit_logger=audit_logger,
+        shadow_manager=shadow_manager,
+        comparison_store=comparison_store,
+        takeover_manager=takeover_manager,
     )
 
     # Phase 2: Intake services
@@ -207,12 +226,23 @@ def create_app(
     adapter_registry.register(MockPermitStatusAdapter(audit_logger=audit_logger))
     adapter_registry.register(Mock311Adapter(audit_logger=audit_logger))
 
+    # Phase 5: Finance services
+    fee_engine = FeeEngine()
+    tax_engine = TaxEngine()
+    deadline_engine = DeadlineEngine()
+    payment_store = PaymentStore()
+
+    # Phase 5: Model registry + LLM latency tracker
+    model_registry = ModelRegistry(production=settings.llm)
+    llm_tracker = LLMLatencyTracker()
+
     # Store on app state for access in route handlers
     app.state.chat_service = chat_service
     app.state.session_manager = session_manager
     app.state.audit_logger = audit_logger
     app.state.feedback_store = FeedbackStore()
-    app.state.shadow_manager = ShadowModeManager()
+    app.state.shadow_manager = shadow_manager
+    app.state.comparison_store = comparison_store
     app.state.intake_store = intake_store
     app.state.wizard_engine = wizard_engine
     app.state.validation_engine = validation_engine
@@ -228,16 +258,23 @@ def create_app(
     app.state.auth_provider = auth_provider
     app.state.approval_gate = approval_gate
 
-    # Phase 3: Mission Control v1 services
+    # Phase 3/5: Mission Control v1 services with enhanced metrics
     metrics_service = MetricsService(
         session_manager=session_manager,
         intake_store=intake_store,
         approval_gate=approval_gate,
         adapter_registry=adapter_registry,
+        llm_tracker=llm_tracker,
+        comparison_store=comparison_store,
     )
-    takeover_manager = SessionTakeoverManager()
     app.state.metrics_service = metrics_service
     app.state.takeover_manager = takeover_manager
+    app.state.fee_engine = fee_engine
+    app.state.tax_engine = tax_engine
+    app.state.deadline_engine = deadline_engine
+    app.state.payment_store = payment_store
+    app.state.model_registry = model_registry
+    app.state.llm_tracker = llm_tracker
 
     # Phase 4: Review services
     redaction_engine = RedactionEngine()
@@ -274,6 +311,9 @@ def create_app(
 
     # Phase 4: Review router
     app.include_router(review_router)
+
+    # Phase 5: Finance router
+    app.include_router(finance_router)
 
     # Templates and static files
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))

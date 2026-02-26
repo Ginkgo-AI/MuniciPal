@@ -8,6 +8,7 @@ from typing import Any, TYPE_CHECKING
 from municipal.export.models import CasePacket
 
 if TYPE_CHECKING:
+    from municipal.finance.models import FeeEstimate, PaymentRecord
     from municipal.review.models import CaseSummary, RedactionReport, SunshineReportData
 
 
@@ -218,5 +219,62 @@ class PacketRenderer:
             for key, value in report_data.notification_summary.items():
                 label = key.replace("_", " ").title()
                 pdf.cell(0, 7, f"  {label}: {value}", new_x="LMARGIN", new_y="NEXT")
+
+        return pdf.output()
+
+    def render_fee_estimate_pdf(self, estimate: FeeEstimate) -> bytes:
+        """Render a fee estimate as a PDF document."""
+        from fpdf import FPDF
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "Fee Estimate", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "", 10)
+        if estimate.case_id:
+            pdf.cell(0, 8, f"Case ID: {estimate.case_id}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Wizard Type: {estimate.wizard_type}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Computed: {estimate.computed_at.isoformat()}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 10, "Line Items", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+
+        for item in estimate.line_items:
+            line = f"  {item.description}: ${item.subtotal:.2f}"
+            if item.quantity != 1.0:
+                line += f" ({item.quantity} x ${item.amount:.2f})"
+            pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+
+        pdf.ln(3)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 10, f"Total: ${estimate.total:.2f}", new_x="LMARGIN", new_y="NEXT")
+
+        return pdf.output()
+
+    def render_payment_receipt_pdf(self, record: PaymentRecord) -> bytes:
+        """Render a payment receipt as a PDF document."""
+        from fpdf import FPDF
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "Payment Receipt", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 8, f"Payment ID: {record.payment_id}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Case ID: {record.case_id}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Amount: ${record.amount:.2f}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Status: {record.status.value}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Date: {record.created_at.isoformat()}", new_x="LMARGIN", new_y="NEXT")
+
+        if record.approval_request_id:
+            pdf.cell(0, 8, f"Approval ID: {record.approval_request_id}", new_x="LMARGIN", new_y="NEXT")
 
         return pdf.output()
