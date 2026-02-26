@@ -1,0 +1,149 @@
+# Permit Application Wizard — 5 steps
+id: permit_application
+title: "Permit Application"
+description: "Apply for a building, zoning, or other municipal permit."
+approval_gate: permit_decision
+classification: sensitive
+
+steps:
+  - id: property_info
+    title: "Property Information"
+    description: "Enter the property details for this permit application."
+    required_session_tier: anonymous
+    fields:
+      - id: property_address
+        label: "Property Address"
+        type: address
+        required: true
+        validators: ["required"]
+        placeholder: "123 Main St, Springfield, IL 62701"
+      - id: parcel_id
+        label: "Parcel ID"
+        type: text
+        required: false
+        placeholder: "e.g. 12-34-567-890"
+        help_text: "Found on your property tax bill"
+      - id: property_type
+        label: "Property Type"
+        type: select
+        required: true
+        validators: ["required"]
+        options:
+          - "Residential"
+          - "Commercial"
+          - "Industrial"
+          - "Mixed Use"
+
+  - id: project_details
+    title: "Project Details"
+    description: "Describe the work you plan to do."
+    required_session_tier: anonymous
+    fields:
+      - id: permit_type
+        label: "Permit Type"
+        type: select
+        required: true
+        validators: ["required"]
+        options:
+          - "Building"
+          - "Electrical"
+          - "Plumbing"
+          - "Mechanical"
+          - "Demolition"
+          - "Fence"
+          - "Sign"
+      - id: project_description
+        label: "Project Description"
+        type: textarea
+        required: true
+        validators: ["required"]
+        placeholder: "Describe the scope of work..."
+      - id: estimated_cost
+        label: "Estimated Project Cost ($)"
+        type: number
+        required: true
+        validators: ["required", "numeric:min_val=0"]
+        placeholder: "0.00"
+      - id: start_date
+        label: "Planned Start Date"
+        type: date
+        required: true
+        validators: ["required", "date"]
+
+  - id: contractor_info
+    title: "Contractor Information"
+    description: "Provide contractor details (if applicable)."
+    required_session_tier: verified
+    show_if:
+      field: property_type
+      equals: "Commercial"
+    fields:
+      - id: contractor_name
+        label: "Contractor Name"
+        type: text
+        required: true
+        validators: ["required"]
+        classification: sensitive
+      - id: contractor_license
+        label: "Contractor License Number"
+        type: text
+        required: true
+        validators: ["required"]
+        classification: sensitive
+      - id: contractor_phone
+        label: "Contractor Phone"
+        type: phone
+        required: true
+        validators: ["required", "phone"]
+        classification: sensitive
+      - id: contractor_email
+        label: "Contractor Email"
+        type: email
+        required: true
+        validators: ["required", "email"]
+        classification: sensitive
+
+  - id: documents
+    title: "Supporting Documents"
+    description: "Upload any supporting documentation."
+    required_session_tier: verified
+    fields:
+      - id: site_plan
+        label: "Site Plan"
+        type: file
+        required: false
+        help_text: "Upload a site plan showing the proposed work."
+      - id: additional_docs
+        label: "Additional Documents"
+        type: file
+        required: false
+        help_text: "Any additional plans, specs, or photos."
+
+  - id: review
+    title: "Review & Submit"
+    description: "Review your application before submitting."
+    required_session_tier: authenticated
+    fields:
+      - id: applicant_name
+        label: "Applicant Full Name"
+        type: text
+        required: true
+        validators: ["required"]
+        classification: sensitive
+      - id: applicant_email
+        label: "Applicant Email"
+        type: email
+        required: true
+        validators: ["required", "email"]
+        classification: sensitive
+      - id: applicant_phone
+        label: "Applicant Phone"
+        type: phone
+        required: true
+        validators: ["required", "phone"]
+        classification: sensitive
+      - id: certify
+        label: "I certify the information provided is accurate"
+        type: checkbox
+        required: true
+        validators: ["required"]

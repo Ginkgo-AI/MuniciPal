@@ -1,0 +1,101 @@
+# FOIA Request Wizard — 3 steps
+id: foia_request
+title: "FOIA Request"
+description: "Submit a Freedom of Information Act request for public records."
+approval_gate: foia_release
+classification: sensitive
+
+steps:
+  - id: request_details
+    title: "Request Details"
+    description: "Describe the records you are requesting."
+    required_session_tier: anonymous
+    fields:
+      - id: requester_name
+        label: "Your Full Name"
+        type: text
+        required: true
+        validators: ["required"]
+        classification: sensitive
+      - id: requester_email
+        label: "Email Address"
+        type: email
+        required: true
+        validators: ["required", "email"]
+        classification: sensitive
+      - id: requester_phone
+        label: "Phone Number"
+        type: phone
+        required: false
+        validators: ["phone"]
+        classification: sensitive
+      - id: organization
+        label: "Organization (if applicable)"
+        type: text
+        required: false
+
+  - id: scope
+    title: "Request Scope"
+    description: "Define the scope of records you are seeking."
+    required_session_tier: anonymous
+    fields:
+      - id: department
+        label: "Department"
+        type: select
+        required: true
+        validators: ["required"]
+        options:
+          - "All Departments"
+          - "Building & Zoning"
+          - "Finance"
+          - "Police"
+          - "Fire"
+          - "Public Works"
+          - "Parks & Recreation"
+          - "City Clerk"
+      - id: records_description
+        label: "Description of Records Requested"
+        type: textarea
+        required: true
+        validators: ["required"]
+        placeholder: "Please be as specific as possible about the records you are seeking..."
+      - id: date_range_start
+        label: "Date Range Start"
+        type: date
+        required: false
+        validators: ["date"]
+      - id: date_range_end
+        label: "Date Range End"
+        type: date
+        required: false
+        validators: ["date"]
+      - id: preferred_format
+        label: "Preferred Format"
+        type: select
+        required: false
+        options:
+          - "Electronic (PDF)"
+          - "Electronic (Original format)"
+          - "Paper copies"
+          - "No preference"
+
+  - id: review
+    title: "Review & Submit"
+    description: "Review your FOIA request before submitting."
+    required_session_tier: verified
+    fields:
+      - id: expedited
+        label: "Request Expedited Processing"
+        type: checkbox
+        required: false
+        help_text: "Expedited processing is available for requests that demonstrate a compelling need."
+      - id: fee_waiver
+        label: "Request Fee Waiver"
+        type: checkbox
+        required: false
+        help_text: "Fee waivers may be granted for requests in the public interest."
+      - id: certify
+        label: "I certify this request is made in good faith"
+        type: checkbox
+        required: true
+        validators: ["required"]

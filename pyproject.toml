@@ -24,6 +24,7 @@ dependencies = [
     "jinja2>=3.1",
     "python-multipart>=0.0.12",
     "aiofiles>=24.1",
+    "fpdf2>=2.7",
 ]
 
 [project.optional-dependencies]

@@ -54,6 +54,31 @@ class EvalConfig(BaseSettings):
     latency_p95_target_ms: float = 8000.0
 
 
+class IntakeConfig(BaseSettings):
+    """Intake wizard configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_INTAKE_"}
+
+    wizards_dir: str = "config/wizards"
+
+
+class GISConfig(BaseSettings):
+    """GIS service configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_GIS_"}
+
+    provider: str = "mock"
+
+
+class I18nConfig(BaseSettings):
+    """Internationalization configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_I18N_"}
+
+    bundles_dir: str = "config/i18n"
+    default_locale: str = "en"
+
+
 class Settings(BaseSettings):
     """Root application settings."""
 
@@ -67,3 +92,6 @@ class Settings(BaseSettings):
     vectordb: VectorDBConfig = Field(default_factory=VectorDBConfig)
     audit: AuditConfig = Field(default_factory=AuditConfig)
     eval: EvalConfig = Field(default_factory=EvalConfig)
+    intake: IntakeConfig = Field(default_factory=IntakeConfig)
+    gis: GISConfig = Field(default_factory=GISConfig)
+    i18n: I18nConfig = Field(default_factory=I18nConfig)

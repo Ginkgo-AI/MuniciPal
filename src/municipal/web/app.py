@@ -20,8 +20,17 @@ from municipal.chat.service import ChatService
 from municipal.chat.session import SessionManager
 from municipal.core.config import Settings
 from municipal.core.types import SessionType
+from municipal.export.renderer import PacketRenderer
+from municipal.gis.service import MockGISService
+from municipal.governance.approval import ApprovalGate
 from municipal.governance.audit import AuditLogger
+from municipal.i18n.engine import I18nEngine
+from municipal.identity.upgrade import SessionUpgradeService
+from municipal.intake.engine import WizardEngine
+from municipal.intake.store import IntakeStore
+from municipal.intake.validation import ValidationEngine
 from municipal.rag.pipeline import RAGPipeline, create_rag_pipeline
+from municipal.web.intake_router import router as intake_router
 from municipal.web.mission_control import (
     FeedbackStore,
     ShadowModeManager,
@@ -136,15 +145,50 @@ def create_app(
         audit_logger=audit_logger,
     )
 
+    # Phase 2: Intake services
+    intake_store = IntakeStore()
+    validation_engine = ValidationEngine()
+    gis_service = MockGISService()
+    i18n_engine = I18nEngine()
+
+    try:
+        approval_gate = ApprovalGate()
+    except Exception:
+        approval_gate = None
+
+    wizard_engine = WizardEngine(
+        store=intake_store,
+        validation_engine=validation_engine,
+        audit_logger=audit_logger,
+        approval_gate=approval_gate,
+    )
+
+    upgrade_service = SessionUpgradeService(
+        session_manager=session_manager,
+        audit_logger=audit_logger,
+    )
+
+    packet_renderer = PacketRenderer()
+
     # Store on app state for access in route handlers
     app.state.chat_service = chat_service
     app.state.session_manager = session_manager
     app.state.audit_logger = audit_logger
     app.state.feedback_store = FeedbackStore()
     app.state.shadow_manager = ShadowModeManager()
+    app.state.intake_store = intake_store
+    app.state.wizard_engine = wizard_engine
+    app.state.validation_engine = validation_engine
+    app.state.gis_service = gis_service
+    app.state.i18n_engine = i18n_engine
+    app.state.upgrade_service = upgrade_service
+    app.state.packet_renderer = packet_renderer
 
     # Mission Control staff dashboard
     app.include_router(mission_control_router)
+
+    # Phase 2: Intake router
+    app.include_router(intake_router)
 
     # Templates and static files
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))

@@ -1,0 +1,64 @@
+# Spanish translation bundle
+locale: es
+name: "Español"
+
+system:
+  welcome: "Bienvenido a Munici-Pal"
+  error: "Ocurrió un error. Por favor, inténtelo de nuevo."
+  loading: "Cargando..."
+  submit: "Enviar"
+  back: "Atrás"
+  next: "Siguiente"
+  cancel: "Cancelar"
+  save: "Guardar"
+  close: "Cerrar"
+
+wizard:
+  start: "Iniciar Solicitud"
+  step_of: "Paso {current} de {total}"
+  review_title: "Revisar y Enviar"
+  submit_success: "Su solicitud ha sido enviada exitosamente."
+  submit_error: "Hubo un error al enviar su solicitud."
+  case_created: "Caso #{case_id} ha sido creado."
+  resume: "Reanudar Solicitud"
+
+  permit:
+    title: "Solicitud de Permiso"
+    description: "Solicitar un permiso de construcción, zonificación u otro permiso municipal."
+    property_info: "Información de la Propiedad"
+    project_details: "Detalles del Proyecto"
+    contractor_info: "Información del Contratista"
+    documents: "Documentos de Apoyo"
+    review: "Revisar y Enviar"
+
+  foia:
+    title: "Solicitud FOIA"
+    description: "Enviar una solicitud de la Ley de Libertad de Información."
+    request_details: "Detalles de la Solicitud"
+    scope: "Alcance de la Solicitud"
+    review: "Revisar y Enviar"
+
+validation:
+  required: "Este campo es obligatorio."
+  email: "Por favor, ingrese una dirección de correo electrónico válida."
+  phone: "Por favor, ingrese un número de teléfono válido."
+  date: "Por favor, ingrese una fecha válida (AAAA-MM-DD)."
+  numeric: "Por favor, ingrese un número válido."
+  parcel_not_found: "No se encontró la parcela. Verifique la dirección o el ID de la parcela."
+  license_invalid: "No se pudo verificar la licencia."
+
+session:
+  upgrade_required: "Este paso requiere verificación de identidad."
+  upgrade_prompt: "Por favor, verifique su identidad para continuar."
+  upgrade_success: "Su identidad ha sido verificada."
+  tier_anonymous: "Anónimo"
+  tier_verified: "Verificado"
+  tier_authenticated: "Autenticado"
+
+cases:
+  status_submitted: "Enviado"
+  status_pending: "Revisión Pendiente"
+  status_approved: "Aprobado"
+  status_denied: "Denegado"
+  export_json: "Exportar como JSON"
+  export_pdf: "Exportar como PDF"

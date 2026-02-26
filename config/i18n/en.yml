@@ -1,0 +1,64 @@
+# English translation bundle
+locale: en
+name: English
+
+system:
+  welcome: "Welcome to Munici-Pal"
+  error: "An error occurred. Please try again."
+  loading: "Loading..."
+  submit: "Submit"
+  back: "Back"
+  next: "Next"
+  cancel: "Cancel"
+  save: "Save"
+  close: "Close"
+
+wizard:
+  start: "Start Application"
+  step_of: "Step {current} of {total}"
+  review_title: "Review & Submit"
+  submit_success: "Your application has been submitted successfully."
+  submit_error: "There was an error submitting your application."
+  case_created: "Case #{case_id} has been created."
+  resume: "Resume Application"
+
+  permit:
+    title: "Permit Application"
+    description: "Apply for a building, zoning, or other municipal permit."
+    property_info: "Property Information"
+    project_details: "Project Details"
+    contractor_info: "Contractor Information"
+    documents: "Supporting Documents"
+    review: "Review & Submit"
+
+  foia:
+    title: "FOIA Request"
+    description: "Submit a Freedom of Information Act request."
+    request_details: "Request Details"
+    scope: "Request Scope"
+    review: "Review & Submit"
+
+validation:
+  required: "This field is required."
+  email: "Please enter a valid email address."
+  phone: "Please enter a valid phone number."
+  date: "Please enter a valid date (YYYY-MM-DD)."
+  numeric: "Please enter a valid number."
+  parcel_not_found: "No parcel found. Please verify the address or parcel ID."
+  license_invalid: "License could not be verified."
+
+session:
+  upgrade_required: "This step requires identity verification."
+  upgrade_prompt: "Please verify your identity to continue."
+  upgrade_success: "Your identity has been verified."
+  tier_anonymous: "Anonymous"
+  tier_verified: "Verified"
+  tier_authenticated: "Authenticated"
+
+cases:
+  status_submitted: "Submitted"
+  status_pending: "Pending Review"
+  status_approved: "Approved"
+  status_denied: "Denied"
+  export_json: "Export as JSON"
+  export_pdf: "Export as PDF"
