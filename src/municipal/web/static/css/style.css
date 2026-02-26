@@ -1,0 +1,671 @@
+/* ==========================================================================
+   Munici-Pal Digital Librarian — Stylesheet
+   Professional, accessible, government-grade design.
+   WCAG 2.1 AA compliant (4.5:1 contrast minimum).
+   ========================================================================== */
+
+/* --- Custom Properties (Light Theme) --- */
+:root {
+    --color-bg: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-text: #1a1a2e;
+    --color-text-secondary: #4a4a6a;
+    --color-border: #d1d5db;
+    --color-primary: #1e3a5f;
+    --color-primary-hover: #162d4a;
+    --color-primary-text: #ffffff;
+    --color-accent: #2c5f8a;
+    --color-warning-bg: #fff3cd;
+    --color-warning-text: #664d03;
+    --color-warning-border: #e0c36a;
+    --color-error-bg: #f8d7da;
+    --color-error-text: #721c24;
+    --color-success: #198754;
+    --color-confidence-high: #198754;
+    --color-confidence-med: #b8860b;
+    --color-confidence-low: #c0392b;
+    --color-user-msg-bg: #1e3a5f;
+    --color-user-msg-text: #ffffff;
+    --color-assistant-msg-bg: #e8edf2;
+    --color-assistant-msg-text: #1a1a2e;
+    --color-citation-bg: #f0f4f8;
+    --color-citation-border: #b0c4d8;
+    --color-focus: #2563eb;
+    --color-skip-bg: #1e3a5f;
+    --color-skip-text: #ffffff;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    --font-size-base: 1rem;
+    --font-size-sm: 0.875rem;
+    --font-size-xs: 0.8125rem;
+    --font-size-lg: 1.125rem;
+    --line-height: 1.6;
+    --max-width: 800px;
+    --transition-speed: 200ms;
+}
+
+/* --- Dark Theme --- */
+[data-theme="dark"] {
+    --color-bg: #121826;
+    --color-surface: #1e2536;
+    --color-text: #e2e8f0;
+    --color-text-secondary: #a0aec0;
+    --color-border: #374151;
+    --color-primary: #4a90d9;
+    --color-primary-hover: #3a7bc8;
+    --color-primary-text: #ffffff;
+    --color-accent: #6aa8e0;
+    --color-warning-bg: #3d3200;
+    --color-warning-text: #ffd54f;
+    --color-warning-border: #665200;
+    --color-error-bg: #3b1014;
+    --color-error-text: #f8a0a8;
+    --color-user-msg-bg: #2a5a8f;
+    --color-user-msg-text: #ffffff;
+    --color-assistant-msg-bg: #252d3d;
+    --color-assistant-msg-text: #e2e8f0;
+    --color-citation-bg: #1a2332;
+    --color-citation-border: #374151;
+    --color-focus: #60a5fa;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Auto dark mode from OS preference --- */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --color-bg: #121826;
+        --color-surface: #1e2536;
+        --color-text: #e2e8f0;
+        --color-text-secondary: #a0aec0;
+        --color-border: #374151;
+        --color-primary: #4a90d9;
+        --color-primary-hover: #3a7bc8;
+        --color-primary-text: #ffffff;
+        --color-accent: #6aa8e0;
+        --color-warning-bg: #3d3200;
+        --color-warning-text: #ffd54f;
+        --color-warning-border: #665200;
+        --color-error-bg: #3b1014;
+        --color-error-text: #f8a0a8;
+        --color-user-msg-bg: #2a5a8f;
+        --color-user-msg-text: #ffffff;
+        --color-assistant-msg-bg: #252d3d;
+        --color-assistant-msg-text: #e2e8f0;
+        --color-citation-bg: #1a2332;
+        --color-citation-border: #374151;
+        --color-focus: #60a5fa;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 100%; /* 16px base */
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* --- Focus Styles --- */
+:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* --- Skip Link --- */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-skip-bg);
+    color: var(--color-skip-text);
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    z-index: 1000;
+}
+
+.skip-link:focus {
+    top: 0.5rem;
+}
+
+/* --- Screen Reader Only --- */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* --- Header --- */
+header {
+    background-color: var(--color-primary);
+    color: var(--color-primary-text);
+    padding: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+.header-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.site-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.site-subtitle {
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* --- Theme Toggle --- */
+.theme-toggle {
+    margin-left: auto;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-sm);
+    color: var(--color-primary-text);
+    cursor: pointer;
+    padding: 0.35rem 0.6rem;
+    font-size: var(--font-size-sm);
+    transition: border-color var(--transition-speed);
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.theme-toggle-icon::before {
+    content: "Light/Dark";
+    font-size: var(--font-size-xs);
+}
+
+/* --- Disclaimer Banner --- */
+.disclaimer-banner {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border-bottom: 2px solid var(--color-warning-border);
+    padding: 0.625rem 1rem;
+    text-align: center;
+    font-size: var(--font-size-sm);
+}
+
+.disclaimer-banner p {
+    max-width: var(--max-width);
+    margin: 0 auto;
+}
+
+/* --- Main / Chat Container --- */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: var(--max-width);
+    width: 100%;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+/* --- Chat Messages Area --- */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    min-height: 300px;
+    max-height: 60vh;
+    scroll-behavior: smooth;
+}
+
+.welcome-message {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: 2rem 1rem;
+    font-size: var(--font-size-base);
+}
+
+/* --- Individual Messages --- */
+.message {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    animation: fadeIn var(--transition-speed) ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message--user {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message--assistant {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.message__label {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.message__bubble {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    line-height: var(--line-height);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.message--user .message__bubble {
+    background-color: var(--color-user-msg-bg);
+    color: var(--color-user-msg-text);
+    border-bottom-right-radius: var(--radius-sm);
+}
+
+.message--assistant .message__bubble {
+    background-color: var(--color-assistant-msg-bg);
+    color: var(--color-assistant-msg-text);
+    border-bottom-left-radius: var(--radius-sm);
+}
+
+/* --- Confidence Indicator --- */
+.confidence-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.confidence-bar {
+    width: 3.5rem;
+    height: 0.375rem;
+    background-color: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.confidence-bar__fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width var(--transition-speed);
+}
+
+.confidence--high .confidence-bar__fill {
+    background-color: var(--color-confidence-high);
+}
+
+.confidence--medium .confidence-bar__fill {
+    background-color: var(--color-confidence-med);
+}
+
+.confidence--low .confidence-bar__fill {
+    background-color: var(--color-confidence-low);
+}
+
+/* --- Low Confidence Warning --- */
+.low-confidence-warning {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border: 1px solid var(--color-warning-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+}
+
+/* --- Citations --- */
+.citations {
+    margin-top: 0.5rem;
+}
+
+.citations__toggle {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-accent);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    padding: 0.25rem 0.625rem;
+    transition: background-color var(--transition-speed);
+}
+
+.citations__toggle:hover,
+.citations__toggle:focus-visible {
+    background-color: var(--color-citation-bg);
+}
+
+.citations__toggle[aria-expanded="true"]::after {
+    content: " \25B2"; /* up arrow */
+}
+
+.citations__toggle[aria-expanded="false"]::after {
+    content: " \25BC"; /* down arrow */
+}
+
+.citations__list {
+    list-style: none;
+    margin-top: 0.375rem;
+    padding: 0;
+}
+
+.citations__list[hidden] {
+    display: none;
+}
+
+.citation-item {
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.25rem;
+    background-color: var(--color-citation-bg);
+    border: 1px solid var(--color-citation-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+}
+
+.citation-item__source {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.citation-item__section {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+.citation-item__quote {
+    margin-top: 0.25rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    border-left: 3px solid var(--color-citation-border);
+    padding-left: 0.5rem;
+}
+
+/* --- Chat Form --- */
+.chat-form {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    align-items: flex-end;
+}
+
+.chat-input {
+    flex: 1;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    resize: none;
+    min-height: 2.5rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    line-height: 1.4;
+    transition: border-color var(--transition-speed);
+}
+
+.chat-input:focus {
+    border-color: var(--color-focus);
+}
+
+.chat-input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.send-button {
+    background-color: var(--color-primary);
+    color: var(--color-primary-text);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.625rem 1.25rem;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--transition-speed);
+}
+
+.send-button:hover,
+.send-button:focus-visible {
+    background-color: var(--color-primary-hover);
+}
+
+.send-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.keyboard-hint {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    padding: 0.25rem 0 0.5rem;
+}
+
+.keyboard-hint kbd {
+    font-family: var(--font-family);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    padding: 0.1rem 0.35rem;
+    font-size: var(--font-size-xs);
+}
+
+/* --- Loading Indicator --- */
+.loading-dots {
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.loading-dots span {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: var(--color-text-secondary);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* --- Error Message --- */
+.error-message {
+    padding: 0.75rem 1rem;
+    background-color: var(--color-error-bg);
+    color: var(--color-error-text);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    margin-bottom: 1rem;
+}
+
+/* --- Footer --- */
+footer {
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints (Mobile-First)
+   ========================================================================== */
+
+/* Small screens (phones) — default styles above */
+
+/* Medium screens (tablets, 600px+) */
+@media (min-width: 37.5em) {
+    .chat-messages {
+        max-height: 65vh;
+    }
+
+    .message {
+        max-width: 75%;
+    }
+}
+
+/* Large screens (desktops, 960px+) */
+@media (min-width: 60em) {
+    main {
+        padding: 1.5rem;
+    }
+
+    .chat-messages {
+        max-height: 70vh;
+        padding: 1.5rem;
+    }
+
+    .message {
+        max-width: 70%;
+    }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+@media print {
+    header,
+    footer,
+    .chat-form,
+    .keyboard-hint,
+    .theme-toggle,
+    .skip-link,
+    .send-button {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        color: black;
+        font-size: 12pt;
+    }
+
+    .chat-container {
+        border: none;
+        box-shadow: none;
+    }
+
+    .chat-messages {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .message__bubble {
+        background: none !important;
+        color: black !important;
+        border: 1px solid #ccc;
+    }
+
+    .disclaimer-banner {
+        border: 1px solid #666;
+        background: #f5f5f5;
+        color: #333;
+    }
+}
+
+/* ==========================================================================
+   High Contrast Mode
+   ========================================================================== */
+@media (forced-colors: active) {
+    .confidence-bar__fill {
+        background-color: Highlight;
+    }
+
+    .send-button {
+        border: 2px solid ButtonText;
+    }
+
+    .chat-input {
+        border: 2px solid ButtonText;
+    }
+}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control — Munici-Pal Staff Dashboard</title>
+    <link rel="stylesheet" href="/static/css/mission_control.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="mc-header" role="banner">
+        <div class="mc-header-brand">
+            <h1>Mission Control</h1>
+            <span class="mc-header-subtitle">Munici-Pal Staff Dashboard</span>
+        </div>
+        <nav class="mc-header-nav" role="navigation" aria-label="Staff navigation">
+            <a href="/staff/" class="mc-nav-link active" data-panel="all">Dashboard</a>
+            <a href="/staff/sessions" class="mc-nav-link" data-panel="sessions">Sessions</a>
+            <a href="/staff/audit" class="mc-nav-link" data-panel="audit">Audit Log</a>
+            <a href="/" class="mc-nav-link mc-nav-link-external">Chat UI</a>
+        </nav>
+        <div class="mc-header-status">
+            <span class="mc-status-dot" id="connectionStatus" title="Connection status"></span>
+            <span id="lastRefresh">--</span>
+        </div>
+    </header>
+
+    <!-- Main three-panel layout -->
+    <main class="mc-panels" role="main">
+        <!-- Left panel: Active Sessions -->
+        <section class="mc-panel mc-panel-sessions" id="panelSessions" role="region" aria-label="Active Sessions" tabindex="0">
+            <div class="mc-panel-header">
+                <h2>Active Sessions</h2>
+                <button class="mc-btn mc-btn-sm" id="btnRefreshSessions" title="Refresh sessions" aria-label="Refresh sessions">Refresh</button>
+            </div>
+            <div class="mc-session-list" id="sessionList" role="list" aria-live="polite">
+                <div class="mc-empty-state">Loading sessions...</div>
+            </div>
+        </section>
+
+        <!-- Center panel: Session Detail -->
+        <section class="mc-panel mc-panel-detail" id="panelDetail" role="region" aria-label="Session Detail" tabindex="0">
+            <div class="mc-panel-header">
+                <h2>Session Detail</h2>
+                <div class="mc-detail-controls" id="detailControls" style="display:none;">
+                    <label class="mc-shadow-toggle" title="Toggle shadow mode for this session">
+                        <input type="checkbox" id="shadowToggle" aria-label="Shadow mode">
+                        <span class="mc-shadow-label">Shadow Mode</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mc-detail-meta" id="detailMeta" style="display:none;">
+                <span class="mc-meta-item">ID: <code id="detailSessionId">--</code></span>
+                <span class="mc-meta-item">Type: <span id="detailSessionType">--</span></span>
+                <span class="mc-meta-item">Messages: <span id="detailMessageCount">0</span></span>
+                <span class="mc-meta-item">Last active: <span id="detailLastActive">--</span></span>
+            </div>
+            <div class="mc-conversation" id="conversationView" role="log" aria-label="Conversation messages">
+                <div class="mc-empty-state">Select a session to view its conversation.</div>
+            </div>
+        </section>
+
+        <!-- Right panel: Audit Log -->
+        <section class="mc-panel mc-panel-audit" id="panelAudit" role="region" aria-label="Audit Log" tabindex="0">
+            <div class="mc-panel-header">
+                <h2>Audit Log</h2>
+                <button class="mc-btn mc-btn-sm" id="btnRefreshAudit" title="Refresh audit log" aria-label="Refresh audit log">Refresh</button>
+            </div>
+            <div class="mc-audit-filters" role="search" aria-label="Audit log filters">
+                <input type="text" id="filterActor" class="mc-input mc-input-sm" placeholder="Actor" aria-label="Filter by actor">
+                <input type="text" id="filterAction" class="mc-input mc-input-sm" placeholder="Action" aria-label="Filter by action">
+                <select id="filterClassification" class="mc-input mc-input-sm" aria-label="Filter by classification">
+                    <option value="">All classifications</option>
+                    <option value="public">Public</option>
+                    <option value="internal">Internal</option>
+                    <option value="sensitive">Sensitive</option>
+                    <option value="restricted">Restricted</option>
+                </select>
+                <input type="date" id="filterAfter" class="mc-input mc-input-sm" aria-label="Filter after date">
+                <input type="date" id="filterBefore" class="mc-input mc-input-sm" aria-label="Filter before date">
+                <button class="mc-btn mc-btn-sm mc-btn-primary" id="btnApplyFilters">Filter</button>
+            </div>
+            <div class="mc-audit-table-wrap">
+                <table class="mc-audit-table" id="auditTable" aria-label="Audit log entries">
+                    <thead>
+                        <tr>
+                            <th scope="col">Timestamp</th>
+                            <th scope="col">Actor</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Resource</th>
+                            <th scope="col">Classification</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditBody">
+                        <tr><td colspan="5" class="mc-empty-state">Loading audit log...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Feedback Modal -->
+    <div class="mc-modal-overlay" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle" style="display:none;">
+        <div class="mc-modal">
+            <div class="mc-modal-header">
+                <h3 id="feedbackModalTitle">Flag This Answer</h3>
+                <button class="mc-btn mc-btn-close" id="btnCloseFeedback" aria-label="Close feedback form">&times;</button>
+            </div>
+            <form id="feedbackForm" class="mc-modal-body">
+                <input type="hidden" id="feedbackSessionId">
+                <input type="hidden" id="feedbackMessageIndex">
+                <div class="mc-form-group">
+                    <label for="feedbackFlagType">Flag Type</label>
+                    <select id="feedbackFlagType" class="mc-input" required>
+                        <option value="inaccurate">Inaccurate</option>
+                        <option value="inappropriate">Inappropriate</option>
+                        <option value="missing_info">Missing Information</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mc-form-group">
+                    <label for="feedbackNote">Notes</label>
+                    <textarea id="feedbackNote" class="mc-input mc-textarea" rows="4" placeholder="Describe the issue..."></textarea>
+                </div>
+                <div class="mc-form-actions">
+                    <button type="button" class="mc-btn" id="btnCancelFeedback">Cancel</button>
+                    <button type="submit" class="mc-btn mc-btn-primary">Submit Feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/mission_control.js"></script>
+</body>
+</html>

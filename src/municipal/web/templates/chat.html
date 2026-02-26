@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Munici-Pal Digital Librarian - AI-powered municipal information assistant">
+    <title>Munici-Pal &mdash; Digital Librarian</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header role="banner">
+        <div class="header-inner">
+            <h1 class="site-title">Munici-Pal</h1>
+            <p class="site-subtitle">Digital Librarian</p>
+            <button
+                type="button"
+                id="theme-toggle"
+                class="theme-toggle"
+                aria-label="Toggle dark mode"
+                title="Toggle dark mode"
+            >
+                <span class="theme-toggle-icon" aria-hidden="true"></span>
+            </button>
+        </div>
+    </header>
+
+    <div class="disclaimer-banner" role="alert">
+        <p>
+            <strong>Disclaimer:</strong> This is an AI assistant. Answers are
+            informational only. For official decisions, please contact city staff.
+        </p>
+    </div>
+
+    <main id="main-content" role="main">
+        <div class="chat-container">
+            <div
+                class="chat-messages"
+                id="chat-messages"
+                role="log"
+                aria-live="polite"
+                aria-label="Chat message history"
+                tabindex="0"
+            >
+                <div class="welcome-message">
+                    <p>Welcome to the Munici-Pal Digital Librarian. Ask me about
+                    city ordinances, policies, and municipal services.</p>
+                </div>
+            </div>
+
+            <div
+                id="sr-announcements"
+                class="sr-only"
+                aria-live="assertive"
+                aria-atomic="true"
+            ></div>
+
+            <form id="chat-form" class="chat-form" aria-label="Send a message">
+                <label for="chat-input" class="sr-only">Type your question</label>
+                <textarea
+                    id="chat-input"
+                    name="message"
+                    class="chat-input"
+                    placeholder="Ask a question about city services..."
+                    rows="1"
+                    required
+                    aria-required="true"
+                    aria-label="Type your question"
+                ></textarea>
+                <button
+                    type="submit"
+                    id="send-button"
+                    class="send-button"
+                    aria-label="Send message"
+                >
+                    <span aria-hidden="true">Send</span>
+                    <span class="sr-only">Send message</span>
+                </button>
+            </form>
+
+            <p class="keyboard-hint" aria-hidden="true">
+                Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for a new line
+            </p>
+        </div>
+    </main>
+
+    <footer role="contentinfo">
+        <p>&copy; 2026 Munici-Pal &mdash; Municipal AI Assistant</p>
+    </footer>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>
