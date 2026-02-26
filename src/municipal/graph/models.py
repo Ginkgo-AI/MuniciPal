@@ -15,6 +15,7 @@ class EntityType(StrEnum):
     PERMIT = "permit"
     DEPARTMENT = "department"
     CONTRACTOR = "contractor"
+    TICKET = "ticket"
 
 
 class RelationshipType(StrEnum):
@@ -24,6 +25,7 @@ class RelationshipType(StrEnum):
     LOCATED_AT = "located_at"
     WORKS_ON = "works_on"
     RELATED_TO = "related_to"
+    NOTIFIED = "notified"
 
 
 class Node(BaseModel):

@@ -16,6 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from municipal.auth.middleware import AuthMiddleware
+from municipal.auth.provider import MockAuthProvider
+from municipal.bridge.adapters.permit_status import MockPermitStatusAdapter
+from municipal.bridge.adapters.service311 import Mock311Adapter
+from municipal.bridge.registry import AdapterRegistry
 from municipal.chat.service import ChatService
 from municipal.chat.session import SessionManager
 from municipal.core.config import Settings
@@ -24,18 +29,26 @@ from municipal.export.renderer import PacketRenderer
 from municipal.gis.service import MockGISService
 from municipal.governance.approval import ApprovalGate
 from municipal.governance.audit import AuditLogger
+from municipal.graph.store import GraphStore
 from municipal.i18n.engine import I18nEngine
 from municipal.identity.upgrade import SessionUpgradeService
 from municipal.intake.engine import WizardEngine
 from municipal.intake.store import IntakeStore
 from municipal.intake.validation import ValidationEngine
+from municipal.notifications.engine import NotificationEngine
+from municipal.notifications.service import MockNotificationService
+from municipal.notifications.store import NotificationStore
 from municipal.rag.pipeline import RAGPipeline, create_rag_pipeline
+from municipal.web.bridge_router import router as bridge_router
+from municipal.web.graph_router import router as graph_router
 from municipal.web.intake_router import router as intake_router
 from municipal.web.mission_control import (
     FeedbackStore,
     ShadowModeManager,
     router as mission_control_router,
 )
+from municipal.web.mission_control_v1 import MetricsService, SessionTakeoverManager
+from municipal.web.notification_router import router as notification_router
 
 _WEB_DIR = Path(__file__).parent
 _TEMPLATES_DIR = _WEB_DIR / "templates"
@@ -156,19 +169,38 @@ def create_app(
     except Exception:
         approval_gate = None
 
+    # Phase 3: Graph store + notifications
+    graph_store = GraphStore()
+    notification_store = NotificationStore()
+    notification_service = MockNotificationService(store=notification_store)
+    notification_engine = NotificationEngine(
+        service=notification_service,
+        audit_logger=audit_logger,
+    )
+
     wizard_engine = WizardEngine(
         store=intake_store,
         validation_engine=validation_engine,
         audit_logger=audit_logger,
         approval_gate=approval_gate,
+        graph_store=graph_store,
     )
+
+    # Phase 3: Authentication
+    auth_provider = MockAuthProvider()
 
     upgrade_service = SessionUpgradeService(
         session_manager=session_manager,
         audit_logger=audit_logger,
+        auth_provider=auth_provider,
     )
 
     packet_renderer = PacketRenderer()
+
+    # Phase 3: Bridge adapters
+    adapter_registry = AdapterRegistry()
+    adapter_registry.register(MockPermitStatusAdapter(audit_logger=audit_logger))
+    adapter_registry.register(Mock311Adapter(audit_logger=audit_logger))
 
     # Store on app state for access in route handlers
     app.state.chat_service = chat_service
@@ -183,12 +215,38 @@ def create_app(
     app.state.i18n_engine = i18n_engine
     app.state.upgrade_service = upgrade_service
     app.state.packet_renderer = packet_renderer
+    app.state.adapter_registry = adapter_registry
+    app.state.graph_store = graph_store
+    app.state.notification_store = notification_store
+    app.state.notification_service = notification_service
+    app.state.notification_engine = notification_engine
+    app.state.auth_provider = auth_provider
+    app.state.approval_gate = approval_gate
+
+    # Phase 3: Mission Control v1 services
+    metrics_service = MetricsService(
+        session_manager=session_manager,
+        intake_store=intake_store,
+        approval_gate=approval_gate,
+        adapter_registry=adapter_registry,
+    )
+    takeover_manager = SessionTakeoverManager()
+    app.state.metrics_service = metrics_service
+    app.state.takeover_manager = takeover_manager
+
+    # Phase 3: Auth middleware
+    app.add_middleware(AuthMiddleware)
 
     # Mission Control staff dashboard
     app.include_router(mission_control_router)
 
     # Phase 2: Intake router
     app.include_router(intake_router)
+
+    # Phase 3: Bridge, notification, graph routers
+    app.include_router(bridge_router)
+    app.include_router(notification_router)
+    app.include_router(graph_router)
 
     # Templates and static files
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))

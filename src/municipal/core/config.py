@@ -79,6 +79,34 @@ class I18nConfig(BaseSettings):
     default_locale: str = "en"
 
 
+class BridgeConfig(BaseSettings):
+    """Bridge adapter configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_BRIDGE_"}
+
+    config_path: str = "config/bridge_adapters.yml"
+    default_timeout_seconds: int = 30
+
+
+class NotificationConfig(BaseSettings):
+    """Notification engine configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_NOTIFICATION_"}
+
+    templates_path: str = "config/notification_templates.yml"
+    default_channel: str = "email"
+
+
+class AuthConfig(BaseSettings):
+    """Authentication configuration."""
+
+    model_config = {"env_prefix": "MUNICIPAL_AUTH_"}
+
+    provider: str = "mock"
+    fixtures_path: str = "config/auth_fixtures.yml"
+    token_expiry_minutes: int = 60
+
+
 class Settings(BaseSettings):
     """Root application settings."""
 
@@ -95,3 +123,6 @@ class Settings(BaseSettings):
     intake: IntakeConfig = Field(default_factory=IntakeConfig)
     gis: GISConfig = Field(default_factory=GISConfig)
     i18n: I18nConfig = Field(default_factory=I18nConfig)
+    bridge: BridgeConfig = Field(default_factory=BridgeConfig)
+    notification: NotificationConfig = Field(default_factory=NotificationConfig)
+    auth: AuthConfig = Field(default_factory=AuthConfig)

@@ -1,0 +1,75 @@
+# 311 Service Request Wizard — 3 steps, no approval gate (low-risk)
+id: service_request_311
+title: "311 Service Request"
+description: "Submit a non-emergency service request to the city."
+classification: internal
+
+steps:
+  - id: category_selection
+    title: "Select Category"
+    description: "Choose the type of issue you want to report."
+    required_session_tier: anonymous
+    fields:
+      - id: category
+        label: "Service Category"
+        type: select
+        required: true
+        validators: ["required"]
+        options:
+          - "pothole"
+          - "streetlight"
+          - "trash"
+          - "noise"
+          - "water"
+          - "other"
+      - id: priority
+        label: "Urgency"
+        type: select
+        required: false
+        options:
+          - "low"
+          - "medium"
+          - "high"
+          - "urgent"
+
+  - id: location_description
+    title: "Location & Description"
+    description: "Provide details about the issue and where it is located."
+    required_session_tier: anonymous
+    fields:
+      - id: location
+        label: "Location"
+        type: address
+        required: true
+        validators: ["required"]
+        placeholder: "Street address or intersection"
+      - id: description
+        label: "Description"
+        type: textarea
+        required: true
+        validators: ["required"]
+        placeholder: "Describe the issue..."
+
+  - id: contact_info
+    title: "Contact Information"
+    description: "Provide your contact info so we can follow up."
+    required_session_tier: verified
+    fields:
+      - id: contact_name
+        label: "Your Name"
+        type: text
+        required: true
+        validators: ["required"]
+        classification: sensitive
+      - id: contact_email
+        label: "Email Address"
+        type: email
+        required: true
+        validators: ["required", "email"]
+        classification: sensitive
+      - id: contact_phone
+        label: "Phone Number"
+        type: phone
+        required: false
+        validators: ["phone"]
+        classification: sensitive

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control v1 — Munici-Pal Staff Dashboard</title>
+    <link rel="stylesheet" href="/static/css/mission_control.css">
+    <style>
+        .mc-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0; }
+        .mc-metric-card { background: #f8f9fa; border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #dee2e6; }
+        .mc-metric-value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .mc-metric-label { font-size: 0.85rem; color: #6c757d; margin-top: 0.25rem; }
+        .mc-approval-queue { margin: 1rem 0; }
+        .mc-approval-item { background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .mc-approval-actions { display: flex; gap: 0.5rem; }
+        .mc-btn { padding: 0.25rem 0.75rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+        .mc-btn-approve { background: #28a745; color: white; }
+        .mc-btn-deny { background: #dc3545; color: white; }
+        .mc-btn-takeover { background: #007bff; color: white; }
+        .mc-btn-release { background: #6c757d; color: white; }
+        .mc-adapter-status { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+        .mc-adapter-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .mc-adapter-badge.connected { background: #d4edda; color: #155724; }
+        .mc-adapter-badge.degraded { background: #fff3cd; color: #856404; }
+        .mc-adapter-badge.disconnected { background: #f8d7da; color: #721c24; }
+        .mc-section { margin: 1.5rem 0; padding: 1rem; border: 1px solid #e9ecef; border-radius: 8px; }
+        .mc-section h2 { margin-top: 0; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <header class="mc-header" role="banner">
+        <div class="mc-header-brand">
+            <h1>Mission Control v1</h1>
+            <span class="mc-header-subtitle">Munici-Pal Staff Dashboard</span>
+        </div>
+        <nav class="mc-header-nav" role="navigation" aria-label="Staff navigation">
+            <a href="/staff/" class="mc-nav-link">Dashboard v0</a>
+            <a href="/" class="mc-nav-link mc-nav-link-external">Chat UI</a>
+        </nav>
+    </header>
+
+    <main class="mc-main" role="main">
+        <div class="mc-section">
+            <h2>System Metrics</h2>
+            <div id="metrics" class="mc-metrics">
+                <div class="mc-metric-card"><div class="mc-metric-value" id="m-sessions">-</div><div class="mc-metric-label">Sessions</div></div>
+                <div class="mc-metric-card"><div class="mc-metric-value" id="m-cases">-</div><div class="mc-metric-label">Cases</div></div>
+                <div class="mc-metric-card"><div class="mc-metric-value" id="m-pending">-</div><div class="mc-metric-label">Pending Approvals</div></div>
+                <div class="mc-metric-card"><div class="mc-metric-value" id="m-approved">-</div><div class="mc-metric-label">Approved</div></div>
+                <div class="mc-metric-card"><div class="mc-metric-value" id="m-denied">-</div><div class="mc-metric-label">Denied</div></div>
+            </div>
+            <h3>Adapter Health</h3>
+            <div id="adapter-health" class="mc-adapter-status"></div>
+        </div>
+
+        <div class="mc-section">
+            <h2>Approval Queue</h2>
+            <div id="approval-queue" class="mc-approval-queue">
+                <p>Loading...</p>
+            </div>
+        </div>
+
+        <div class="mc-section">
+            <h2>Session Takeover</h2>
+            <div id="sessions-list">
+                <p>Loading...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function clearChildren(el) {
+            while (el.firstChild) el.removeChild(el.firstChild);
+        }
+
+        function createText(tag, text) {
+            const el = document.createElement(tag);
+            el.textContent = text;
+            return el;
+        }
+
+        async function loadMetrics() {
+            try {
+                const resp = await fetch('/api/staff/metrics');
+                const data = await resp.json();
+                document.getElementById('m-sessions').textContent = data.total_sessions || 0;
+                document.getElementById('m-cases').textContent = data.total_cases || 0;
+                document.getElementById('m-pending').textContent = data.pending_approvals || 0;
+                document.getElementById('m-approved').textContent = data.approved_count || 0;
+                document.getElementById('m-denied').textContent = data.denied_count || 0;
+
+                const healthDiv = document.getElementById('adapter-health');
+                clearChildren(healthDiv);
+                for (const [name, status] of Object.entries(data.adapter_health || {})) {
+                    const badge = document.createElement('span');
+                    badge.className = 'mc-adapter-badge ' + status;
+                    badge.textContent = name + ': ' + status;
+                    healthDiv.appendChild(badge);
+                }
+            } catch (e) { console.error('Failed to load metrics:', e); }
+        }
+
+        function buildApprovalItem(r) {
+            const item = document.createElement('div');
+            item.className = 'mc-approval-item';
+
+            const info = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = r.gate_type + ' - ' + r.resource;
+            info.appendChild(title);
+            info.appendChild(document.createElement('br'));
+            const detail = document.createElement('small');
+            detail.textContent = 'Status: ' + r.status + ' | By: ' + r.requestor + ' | ' + r.created_at;
+            info.appendChild(detail);
+            item.appendChild(info);
+
+            if (r.status === 'pending') {
+                const actions = document.createElement('div');
+                actions.className = 'mc-approval-actions';
+                const approveBtn = document.createElement('button');
+                approveBtn.className = 'mc-btn mc-btn-approve';
+                approveBtn.textContent = 'Approve';
+                approveBtn.addEventListener('click', function() { approveRequest(r.request_id); });
+                const denyBtn = document.createElement('button');
+                denyBtn.className = 'mc-btn mc-btn-deny';
+                denyBtn.textContent = 'Deny';
+                denyBtn.addEventListener('click', function() { denyRequest(r.request_id); });
+                actions.appendChild(approveBtn);
+                actions.appendChild(denyBtn);
+                item.appendChild(actions);
+            }
+            return item;
+        }
+
+        async function loadApprovals() {
+            try {
+                const resp = await fetch('/api/staff/approvals');
+                const data = await resp.json();
+                const container = document.getElementById('approval-queue');
+                clearChildren(container);
+                if (!data.length) {
+                    container.appendChild(createText('p', 'No approval requests.'));
+                    return;
+                }
+                data.forEach(function(r) { container.appendChild(buildApprovalItem(r)); });
+            } catch (e) { console.error('Failed to load approvals:', e); }
+        }
+
+        async function approveRequest(id) {
+            await fetch('/api/staff/approvals/' + encodeURIComponent(id) + '/approve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({approver: 'staff'})
+            });
+            loadApprovals(); loadMetrics();
+        }
+
+        async function denyRequest(id) {
+            const reason = prompt('Reason for denial:');
+            if (reason === null) return;
+            await fetch('/api/staff/approvals/' + encodeURIComponent(id) + '/deny', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({approver: 'staff', reason: reason})
+            });
+            loadApprovals(); loadMetrics();
+        }
+
+        function buildSessionItem(s) {
+            const item = document.createElement('div');
+            item.className = 'mc-approval-item';
+
+            const info = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = s.session_id.substring(0, 8) + '...';
+            info.appendChild(title);
+            const detail = document.createElement('small');
+            detail.textContent = ' (' + s.session_type + ') ' + s.message_count + ' messages';
+            info.appendChild(detail);
+            item.appendChild(info);
+
+            const actions = document.createElement('div');
+            actions.className = 'mc-approval-actions';
+            const takeoverBtn = document.createElement('button');
+            takeoverBtn.className = 'mc-btn mc-btn-takeover';
+            takeoverBtn.textContent = 'Take Over';
+            takeoverBtn.addEventListener('click', function() { takeoverSession(s.session_id); });
+            const releaseBtn = document.createElement('button');
+            releaseBtn.className = 'mc-btn mc-btn-release';
+            releaseBtn.textContent = 'Release';
+            releaseBtn.addEventListener('click', function() { releaseSession(s.session_id); });
+            actions.appendChild(takeoverBtn);
+            actions.appendChild(releaseBtn);
+            item.appendChild(actions);
+            return item;
+        }
+
+        async function loadSessions() {
+            try {
+                const resp = await fetch('/api/staff/sessions');
+                const data = await resp.json();
+                const container = document.getElementById('sessions-list');
+                clearChildren(container);
+                if (!data.length) {
+                    container.appendChild(createText('p', 'No active sessions.'));
+                    return;
+                }
+                data.forEach(function(s) { container.appendChild(buildSessionItem(s)); });
+            } catch (e) { console.error('Failed to load sessions:', e); }
+        }
+
+        async function takeoverSession(id) {
+            await fetch('/api/staff/sessions/' + encodeURIComponent(id) + '/takeover', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({staff_id: 'staff'})
+            });
+            loadSessions();
+        }
+
+        async function releaseSession(id) {
+            await fetch('/api/staff/sessions/' + encodeURIComponent(id) + '/release', { method: 'POST' });
+            loadSessions();
+        }
+
+        loadMetrics();
+        loadApprovals();
+        loadSessions();
+        setInterval(loadMetrics, 10000);
+    </script>
+</body>
+</html>

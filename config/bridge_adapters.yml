@@ -1,0 +1,14 @@
+adapters:
+  permit_status:
+    enabled: true
+    provider: mock
+    timeout_seconds: 30
+    classification: sensitive
+    description: "Municipal permit status lookup"
+
+  service_311:
+    enabled: true
+    provider: mock
+    timeout_seconds: 30
+    classification: internal
+    description: "311 service request system"

@@ -343,3 +343,148 @@ async def api_toggle_shadow(request: Request, body: ShadowToggleRequest) -> dict
         "session_id": body.session_id,
         "shadow_mode": new_state,
     }
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Approval queue, Metrics, Session takeover
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/staff/approvals")
+async def api_list_approvals(request: Request) -> list[dict[str, Any]]:
+    """List pending approval requests."""
+    approval_gate = getattr(request.app.state, "approval_gate", None)
+    if approval_gate is None:
+        return []
+    from municipal.core.types import ApprovalStatus
+    requests = [
+        r for r in approval_gate._requests.values()
+    ]
+    return [
+        {
+            "request_id": r.request_id,
+            "gate_type": r.gate_type,
+            "resource": r.resource,
+            "requestor": r.requestor,
+            "status": r.status,
+            "created_at": r.created_at.isoformat(),
+            "approver": r.approver,
+            "deny_reason": r.deny_reason,
+        }
+        for r in requests
+    ]
+
+
+@router.get("/api/staff/approvals/{request_id}")
+async def api_get_approval(request_id: str, request: Request) -> dict[str, Any]:
+    """Get approval request detail."""
+    approval_gate = getattr(request.app.state, "approval_gate", None)
+    if approval_gate is None:
+        raise HTTPException(status_code=503, detail="Approval gate not available")
+    try:
+        r = approval_gate.get_request(request_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Approval request {request_id!r} not found")
+    return {
+        "request_id": r.request_id,
+        "gate_type": r.gate_type,
+        "resource": r.resource,
+        "requestor": r.requestor,
+        "status": r.status,
+        "created_at": r.created_at.isoformat(),
+        "updated_at": r.updated_at.isoformat(),
+        "approver": r.approver,
+        "deny_reason": r.deny_reason,
+        "approvals": r.approvals,
+    }
+
+
+class ApprovalActionRequest(BaseModel):
+    """Request body for approve/deny actions."""
+    approver: str = "staff"
+    reason: str = ""
+
+
+@router.post("/api/staff/approvals/{request_id}/approve")
+async def api_approve_request(
+    request_id: str, request: Request, body: ApprovalActionRequest | None = None
+) -> dict[str, Any]:
+    """Approve an approval request."""
+    approval_gate = getattr(request.app.state, "approval_gate", None)
+    if approval_gate is None:
+        raise HTTPException(status_code=503, detail="Approval gate not available")
+    approver = body.approver if body else "staff"
+    try:
+        r = approval_gate.approve(request_id, approver)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Approval request {request_id!r} not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"request_id": r.request_id, "status": r.status, "approver": r.approver}
+
+
+@router.post("/api/staff/approvals/{request_id}/deny")
+async def api_deny_request(
+    request_id: str, body: ApprovalActionRequest, request: Request
+) -> dict[str, Any]:
+    """Deny an approval request."""
+    approval_gate = getattr(request.app.state, "approval_gate", None)
+    if approval_gate is None:
+        raise HTTPException(status_code=503, detail="Approval gate not available")
+    try:
+        r = approval_gate.deny(request_id, body.approver, body.reason)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Approval request {request_id!r} not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"request_id": r.request_id, "status": r.status, "deny_reason": r.deny_reason}
+
+
+@router.get("/api/staff/metrics")
+async def api_metrics(request: Request) -> dict[str, Any]:
+    """Metrics dashboard snapshot."""
+    metrics_service = getattr(request.app.state, "metrics_service", None)
+    if metrics_service is None:
+        return {"error": "Metrics service not available"}
+    snapshot = metrics_service.snapshot()
+    return snapshot.model_dump(mode="json")
+
+
+@router.get("/api/staff/metrics/adapters")
+async def api_adapter_metrics(request: Request) -> dict[str, Any]:
+    """Adapter health and usage metrics."""
+    registry = getattr(request.app.state, "adapter_registry", None)
+    if registry is None:
+        return {"adapters": []}
+    health = registry.health_check_all()
+    return {
+        "adapters": [
+            {"name": name, "status": status.value}
+            for name, status in health.items()
+        ]
+    }
+
+
+class TakeoverRequest(BaseModel):
+    staff_id: str = "staff"
+
+
+@router.post("/api/staff/sessions/{session_id}/takeover")
+async def api_takeover_session(
+    session_id: str, request: Request, body: TakeoverRequest | None = None
+) -> dict[str, Any]:
+    """Staff takes over a session."""
+    takeover_mgr = getattr(request.app.state, "takeover_manager", None)
+    if takeover_mgr is None:
+        raise HTTPException(status_code=503, detail="Takeover manager not available")
+    staff_id = body.staff_id if body else "staff"
+    return takeover_mgr.takeover(session_id, staff_id)
+
+
+@router.post("/api/staff/sessions/{session_id}/release")
+async def api_release_session(session_id: str, request: Request) -> dict[str, Any]:
+    """Release a taken-over session."""
+    takeover_mgr = getattr(request.app.state, "takeover_manager", None)
+    if takeover_mgr is None:
+        raise HTTPException(status_code=503, detail="Takeover manager not available")
+    return takeover_mgr.release(session_id)

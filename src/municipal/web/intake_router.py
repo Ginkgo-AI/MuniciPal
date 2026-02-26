@@ -385,3 +385,64 @@ async def get_bundle(locale: str, request: Request) -> dict[str, Any]:
     if not bundle:
         raise HTTPException(status_code=404, detail=f"Locale {locale!r} not found")
     return bundle
+
+
+# --- Auth endpoints ---
+
+
+class AuthLoginRequest(BaseModel):
+    username: str
+    code: str
+
+
+class AuthTokenRequest(BaseModel):
+    token: str
+
+
+@router.post("/api/auth/login")
+async def auth_login(body: AuthLoginRequest, request: Request) -> dict[str, Any]:
+    """Authenticate and get a token."""
+    provider = getattr(request.app.state, "auth_provider", None)
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Auth provider not available")
+
+    from municipal.auth.models import AuthCredentials
+    result = provider.authenticate(AuthCredentials(username=body.username, code=body.code))
+    if not result.success:
+        raise HTTPException(status_code=401, detail=result.error)
+    return result.model_dump(exclude_none=False)
+
+
+@router.post("/api/auth/validate")
+async def auth_validate(body: AuthTokenRequest, request: Request) -> dict[str, Any]:
+    """Validate a token."""
+    provider = getattr(request.app.state, "auth_provider", None)
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Auth provider not available")
+
+    validation = provider.validate_token(body.token)
+    return validation.model_dump(mode="json")
+
+
+@router.post("/api/auth/refresh")
+async def auth_refresh(body: AuthTokenRequest, request: Request) -> dict[str, Any]:
+    """Refresh a token."""
+    provider = getattr(request.app.state, "auth_provider", None)
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Auth provider not available")
+
+    result = provider.refresh_token(body.token)
+    if not result.success:
+        raise HTTPException(status_code=401, detail=result.error)
+    return result.model_dump(exclude_none=False)
+
+
+@router.post("/api/auth/logout")
+async def auth_logout(body: AuthTokenRequest, request: Request) -> dict[str, Any]:
+    """Revoke a token."""
+    provider = getattr(request.app.state, "auth_provider", None)
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Auth provider not available")
+
+    revoked = provider.revoke_token(body.token)
+    return {"revoked": revoked}

@@ -26,16 +26,18 @@ class SessionUpgradeService:
     """Handles session tier upgrades with verification.
 
     Phase 2 implementation accepts any verification code (simulated).
-    Future phases will integrate real identity providers.
+    Phase 3 can optionally delegate to an AuthProvider when injected.
     """
 
     def __init__(
         self,
         session_manager: SessionManager,
         audit_logger: AuditLogger | None = None,
+        auth_provider: Any | None = None,
     ) -> None:
         self._sessions = session_manager
         self._audit = audit_logger
+        self._auth_provider = auth_provider
         self._pending_upgrades: dict[str, dict[str, Any]] = {}
 
     def request_upgrade(self, session_id: str) -> dict[str, Any]:

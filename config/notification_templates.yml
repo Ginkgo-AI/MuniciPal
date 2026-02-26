@@ -1,0 +1,25 @@
+templates:
+  case_submitted:
+    subject: "Case Submitted: {case_id}"
+    body: "Your case {case_id} for {wizard_title} has been submitted and is under review."
+    channel: email
+
+  case_approved:
+    subject: "Case Approved: {case_id}"
+    body: "Your case {case_id} has been approved. You may proceed with your {wizard_title}."
+    channel: email
+
+  case_denied:
+    subject: "Case Denied: {case_id}"
+    body: "Your case {case_id} has been denied. Reason: {reason}. You may contact staff for more information."
+    channel: email
+
+  ticket_created:
+    subject: "Service Request Created: {ticket_id}"
+    body: "Your 311 service request {ticket_id} has been received. Category: {category}. We will follow up shortly."
+    channel: email
+
+  permit_status_changed:
+    subject: "Permit Status Update: {permit_id}"
+    body: "The status of your permit {permit_id} has changed to {status}."
+    channel: email

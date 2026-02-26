@@ -1,0 +1,32 @@
+users:
+  - username: jane.smith
+    display_name: "Jane Smith"
+    code: "123456"
+    tier: authenticated
+    email: jane@example.com
+    phone: "555-0101"
+
+  - username: bob.johnson
+    display_name: "Bob Johnson"
+    code: "654321"
+    tier: verified
+    email: bob@example.com
+
+  - username: maria.garcia
+    display_name: "Maria Garcia"
+    code: "111222"
+    tier: authenticated
+    email: maria@example.com
+    phone: "555-0102"
+
+  - username: staff.admin
+    display_name: "Staff Admin"
+    code: "admin123"
+    tier: authenticated
+    email: admin@municipal.gov
+    role: staff
+
+  - username: resident.anon
+    display_name: "Anonymous Resident"
+    code: ""
+    tier: anonymous

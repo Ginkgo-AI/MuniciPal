@@ -11,6 +11,8 @@ import yaml
 from municipal.core.types import AuditEvent, DataClassification, SessionType
 from municipal.governance.approval import ApprovalGate
 from municipal.governance.audit import AuditLogger
+from municipal.graph.models import Edge, EntityType, Node, RelationshipType
+from municipal.graph.store import GraphStore
 from municipal.intake.models import (
     Case,
     FieldDefinition,
@@ -89,11 +91,13 @@ class WizardEngine:
         audit_logger: AuditLogger | None = None,
         approval_gate: ApprovalGate | None = None,
         wizards_dir: str | Path | None = None,
+        graph_store: GraphStore | None = None,
     ) -> None:
         self._store = store
         self._validation = validation_engine
         self._audit = audit_logger
         self._approval = approval_gate
+        self._graph = graph_store
         self._wizards: dict[str, WizardDefinition] = {}
         self._load_wizards(Path(wizards_dir) if wizards_dir else _DEFAULT_WIZARDS_DIR)
 
@@ -307,12 +311,67 @@ class WizardEngine:
         self._store.save_wizard_state(state)
         self._store.save_case(case)
 
+        # Link case to graph
+        self._link_case_to_graph(case, merged_data)
+
         self._log_audit(
             session_id, "wizard_submitted", state.wizard_id,
             {"wizard_id": state.wizard_id, "case_id": case.id},
         )
 
         return case
+
+    def _link_case_to_graph(self, case: Case, data: dict[str, Any]) -> None:
+        """Create graph nodes and edges for a submitted case."""
+        if self._graph is None:
+            return
+
+        # CASE node
+        case_node = Node(
+            id=f"case:{case.id}",
+            entity_type=EntityType.CASE,
+            label=f"Case {case.id}",
+            properties={"wizard_id": case.wizard_id, "status": case.status},
+        )
+        self._graph.add_node(case_node)
+
+        # PERSON node (via session_id or applicant_name)
+        applicant_name = data.get("applicant_name", "")
+        person_id = f"person:{case.session_id}"
+        person_node = Node(
+            id=person_id,
+            entity_type=EntityType.PERSON,
+            label=applicant_name or case.session_id,
+            properties={"session_id": case.session_id},
+        )
+        # Only add if not already present
+        if self._graph.get_node(person_id) is None:
+            self._graph.add_node(person_node)
+
+        # SUBMITTED edge: person -> case
+        self._graph.add_edge(Edge(
+            source_id=person_id,
+            target_id=case_node.id,
+            relationship=RelationshipType.SUBMITTED,
+        ))
+
+        # PARCEL node (if parcel_id in data)
+        parcel_id = data.get("parcel_id")
+        if parcel_id:
+            parcel_node_id = f"parcel:{parcel_id}"
+            if self._graph.get_node(parcel_node_id) is None:
+                self._graph.add_node(Node(
+                    id=parcel_node_id,
+                    entity_type=EntityType.PARCEL,
+                    label=parcel_id,
+                    properties={"parcel_id": parcel_id},
+                ))
+            # LOCATED_AT edge: case -> parcel
+            self._graph.add_edge(Edge(
+                source_id=case_node.id,
+                target_id=parcel_node_id,
+                relationship=RelationshipType.LOCATED_AT,
+            ))
 
     def _should_skip_step(self, step_def: StepDefinition, state: WizardState) -> bool:
         """Evaluate show_if condition for a step."""
