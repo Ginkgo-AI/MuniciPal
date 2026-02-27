@@ -1,0 +1,34 @@
+{
+  "common": {
+    "appName": "Munici-Pal",
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "send": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "dashboard": {
+    "title": "Panel de Control",
+    "subtitle": "Métricas operativas en tiempo real",
+    "activeSessions": "Sesiones Activas",
+    "totalCases": "Casos Totales",
+    "pendingApprovals": "Aprobaciones Pendientes",
+    "llmLatency": "Latencia LLM p50",
+    "shadowDivergence": "Divergencia Shadow"
+  },
+  "sessions": {
+    "title": "Sesiones",
+    "subtitle": "Sesiones de chat activas",
+    "sessionId": "ID de Sesión",
+    "type": "Tipo",
+    "messages": "Mensajes",
+    "lastActive": "Última Actividad",
+    "shadow": "Shadow"
+  },
+  "home": {
+    "badge": "Panel de Empleados",
+    "title": "Centro de Mando",
+    "subtitle": "Gestiona operaciones, monitorea sesiones y configura reglas para los asistentes de IA de Munici-Pal.",
+    "openDashboard": "Abrir Panel",
+    "viewSessions": "Ver Sesiones"
+  }
+}

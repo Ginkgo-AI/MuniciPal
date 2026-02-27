@@ -6,6 +6,14 @@
     "send": "Enviar",
     "cancel": "Cancelar"
   },
+  "home": {
+    "badge": "Bienvenido a la Ciudad Estrella",
+    "heading": "Roanoke, VA",
+    "brand": "Munici-Pal",
+    "description": "Tu asistente moderno con IA para la Ciudad de Roanoke. Obtén ayuda con permisos, solicitudes FOIA, tickets de servicio y explora Blue Ridge.",
+    "startChat": "Iniciar una Conversación",
+    "browseServices": "Explorar Servicios"
+  },
   "chat": {
     "title": "Chatea con Munici-Pal",
     "subtitle": "Pregunta sobre permisos, servicios y más",
@@ -17,6 +25,7 @@
     "title": "Servicios Municipales",
     "subtitle": "Explora los servicios disponibles y comienza una solicitud",
     "noServices": "No hay servicios disponibles.",
-    "steps": "{count} pasos"
+    "steps": "{count} pasos",
+    "loadError": "No se pudieron cargar los servicios. Intente actualizar la pagina."
   }
 }

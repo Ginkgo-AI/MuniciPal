@@ -6,6 +6,14 @@
     "send": "Send",
     "cancel": "Cancel"
   },
+  "home": {
+    "badge": "Welcome to the Star City",
+    "heading": "Roanoke, VA",
+    "brand": "Munici-Pal",
+    "description": "Your modern AI-powered assistant for the City of Roanoke. Get help with permits, FOIA requests, service tickets, and explore the Blue Ridge.",
+    "startChat": "Start a Conversation",
+    "browseServices": "Browse City Services"
+  },
   "chat": {
     "title": "Chat with Munici-Pal",
     "subtitle": "Ask about permits, services, and more",
@@ -17,6 +25,7 @@
     "title": "City Services",
     "subtitle": "Browse available services and start an application",
     "noServices": "No services available.",
-    "steps": "{count} steps"
+    "steps": "{count} steps",
+    "loadError": "Unable to load services. Please try refreshing the page."
   }
 }

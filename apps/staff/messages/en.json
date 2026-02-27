@@ -1,0 +1,34 @@
+{
+  "common": {
+    "appName": "Munici-Pal",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "send": "Send",
+    "cancel": "Cancel"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Real-time operational metrics",
+    "activeSessions": "Active Sessions",
+    "totalCases": "Total Cases",
+    "pendingApprovals": "Pending Approvals",
+    "llmLatency": "LLM Latency p50",
+    "shadowDivergence": "Shadow Divergence"
+  },
+  "sessions": {
+    "title": "Sessions",
+    "subtitle": "Active chat sessions",
+    "sessionId": "Session ID",
+    "type": "Type",
+    "messages": "Messages",
+    "lastActive": "Last Active",
+    "shadow": "Shadow"
+  },
+  "home": {
+    "badge": "Staff Dashboard",
+    "title": "Mission Control",
+    "subtitle": "Manage operations, monitor sessions, and configure rules for Munici-Pal AI assistants.",
+    "openDashboard": "Open Dashboard",
+    "viewSessions": "View Sessions"
+  }
+}

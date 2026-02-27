@@ -6,11 +6,11 @@
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
+  --secondary-foreground: #1e293b;
   --muted: #f8fafc;
   --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent: #eef2ff;
+  --accent-foreground: #1e293b;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
@@ -23,26 +23,41 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #020617;
-    --foreground: #f8fafc;
-    --primary: #6366f1;
-    --primary-foreground: #ffffff;
+    --foreground: #f1f5f9;
+    --primary: #818cf8;
+    --primary-foreground: #0f0a2e;
     --secondary: #0f172a;
-    --secondary-foreground: #f8fafc;
+    --secondary-foreground: #e2e8f0;
     --muted: #0f172a;
     --muted-foreground: #94a3b8;
     --accent: #1e293b;
-    --accent-foreground: #f8fafc;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
+    --accent-foreground: #e2e8f0;
+    --destructive: #f87171;
+    --destructive-foreground: #450a0a;
     --border: #1e293b;
     --input: #1e293b;
-    --ring: #6366f1;
-    --card: #020617;
-    --card-foreground: #f8fafc;
+    --ring: #818cf8;
+    --card: #0f172a;
+    --card-foreground: #f1f5f9;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
 }
