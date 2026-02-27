@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api";
 
 interface MetricsSnapshot {
@@ -18,9 +19,15 @@ interface MetricsSnapshot {
 }
 
 export function useMetrics() {
+  const { data: session } = useSession();
+  const token = (session as Record<string, unknown> | null)?.apiToken as
+    | string
+    | undefined;
+
   return useQuery<MetricsSnapshot>({
     queryKey: ["metrics"],
-    queryFn: () => apiFetch("/staff/metrics"),
+    queryFn: () => apiFetch("/staff/metrics", { token }),
     refetchInterval: 10_000,
+    enabled: !!token,
   });
 }
