@@ -65,9 +65,9 @@ class FeeEngine:
                 break
 
         if entry is None:
-            # Default to first entry or generic
-            entry = schedule[0] if schedule else FeeScheduleEntry(
-                name=permit_type, base_fee=100.0
+            raise ValueError(
+                f"No fee schedule entry for permit type {permit_type!r}. "
+                f"Available: {[e.name for e in schedule]}"
             )
 
         # Base fee

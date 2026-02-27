@@ -14,19 +14,12 @@ between tiers.
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from pydantic import BaseModel, Field
 
-from municipal.core.types import DataClassification
+from municipal.core.types import DataClassification, SessionType
 
-
-class SessionTier(StrEnum):
-    """The three session tiers supported by the platform."""
-
-    ANONYMOUS = "anonymous"
-    VERIFIED = "verified"
-    AUTHENTICATED = "authenticated"
+# SessionTier is an alias for SessionType to avoid duplicate enum definitions.
+SessionTier = SessionType
 
 
 class Capability(BaseModel):

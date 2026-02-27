@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -88,8 +89,8 @@ class OpenAICompatClient(LLMClient):
         **kwargs: Any,
     ) -> httpx.Response:
         """Execute an HTTP request with retry on 5xx and transport errors."""
-        last_exc: Exception | None = None
         max_attempts = max(1, self.config.max_retries + 1)
+        last_resp: httpx.Response | None = None
 
         for attempt in range(max_attempts):
             try:
@@ -97,23 +98,26 @@ class OpenAICompatClient(LLMClient):
                 # Don't retry on client errors (4xx)
                 if resp.status_code < 500:
                     return resp
+                last_resp = resp
                 # Retry on 5xx
                 if attempt < max_attempts - 1:
+                    delay = 0.5 * (2 ** attempt)
                     logger.warning(
-                        "Request to %s returned %d, retrying (%d/%d)",
-                        url, resp.status_code, attempt + 1, max_attempts,
+                        "Request to %s returned %d, retrying in %.1fs (%d/%d)",
+                        url, resp.status_code, delay, attempt + 1, max_attempts,
                     )
+                    await asyncio.sleep(delay)
                     continue
                 return resp
-            except (httpx.TransportError, httpx.TimeoutException) as exc:
-                last_exc = exc
+            except httpx.TransportError as exc:
                 if attempt < max_attempts - 1:
+                    delay = 0.5 * (2 ** attempt)
                     logger.warning(
-                        "Transport error on %s: %s, retrying (%d/%d)",
-                        url, exc, attempt + 1, max_attempts,
+                        "Transport error on %s: %s, retrying in %.1fs (%d/%d)",
+                        url, exc, delay, attempt + 1, max_attempts,
                     )
+                    await asyncio.sleep(delay)
                     continue
                 raise
 
-        # Should not reach here, but just in case
-        raise last_exc  # type: ignore[misc]
+        return last_resp  # type: ignore[return-value]

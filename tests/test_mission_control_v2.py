@@ -45,7 +45,9 @@ def app(mock_rag_pipeline, mock_audit_logger):
 
 @pytest.fixture
 def client(app):
-    return TestClient(app)
+    from tests.conftest import install_staff_token
+    token = install_staff_token(app)
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
 
 
 class TestLLMLatencyTracker:

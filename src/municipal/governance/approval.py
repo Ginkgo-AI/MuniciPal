@@ -216,6 +216,10 @@ class ApprovalGate:
         """All requests currently in PENDING status."""
         return [r for r in self._requests.values() if r.status == ApprovalStatus.PENDING]
 
+    def list_all_requests(self) -> list[ApprovalRequest]:
+        """All approval requests."""
+        return list(self._requests.values())
+
     def _get_request(self, request_id: str) -> ApprovalRequest:
         """Internal helper to fetch a request or raise KeyError."""
         if request_id not in self._requests:

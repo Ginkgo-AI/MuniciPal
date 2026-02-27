@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from collections import deque
 from datetime import datetime, timezone
 from typing import Any
@@ -89,13 +88,13 @@ class MetricsService:
 
         total_cases = 0
         if self._intake:
-            total_cases = len(self._intake._cases)
+            total_cases = self._intake.case_count
 
         pending = 0
         approved = 0
         denied = 0
         if self._approval:
-            for req in self._approval._requests.values():
+            for req in self._approval.list_all_requests():
                 if req.status == "pending":
                     pending += 1
                 elif req.status == "approved":

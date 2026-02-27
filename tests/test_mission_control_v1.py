@@ -76,10 +76,12 @@ class TestSessionTakeoverManager:
 
 @pytest.fixture
 def client() -> TestClient:
+    from tests.conftest import install_staff_token
     mock_rag = MagicMock()
     mock_rag.query.return_value = MagicMock(answer="test", sources=[], confidence=0.9)
     app = create_app(settings=Settings(), rag_pipeline=mock_rag)
-    return TestClient(app)
+    token = install_staff_token(app)
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
 
 
 class TestMissionControlV1API:

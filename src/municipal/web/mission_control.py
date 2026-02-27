@@ -20,6 +20,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from municipal.core.config import LLMConfig
+from municipal.core.types import SessionType
 
 _WEB_DIR = Path(__file__).parent
 _TEMPLATES_DIR = _WEB_DIR / "templates"
@@ -27,6 +28,13 @@ _TEMPLATES_DIR = _WEB_DIR / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 router = APIRouter()
+
+
+def _require_staff(request: Request) -> None:
+    """Verify the request comes from an authenticated user (staff)."""
+    auth_tier = getattr(request.state, "auth_tier", SessionType.ANONYMOUS)
+    if auth_tier != SessionType.AUTHENTICATED:
+        raise HTTPException(status_code=403, detail="Staff authentication required")
 
 
 # ---------------------------------------------------------------------------
@@ -189,19 +197,20 @@ class ShadowModeManager:
         self._shadow_sessions.clear()
 
 
-# Module-level singleton instances (attached to app state in create_app)
-_feedback_store = FeedbackStore()
-_shadow_manager = ShadowModeManager()
-
-
 def get_feedback_store(request: Request) -> FeedbackStore:
-    """Get the FeedbackStore from app state, falling back to module-level."""
-    return getattr(request.app.state, "feedback_store", _feedback_store)
+    """Get the FeedbackStore from app state."""
+    store = getattr(request.app.state, "feedback_store", None)
+    if store is None:
+        raise HTTPException(status_code=503, detail="Feedback store not available")
+    return store
 
 
 def get_shadow_manager(request: Request) -> ShadowModeManager:
-    """Get the ShadowModeManager from app state, falling back to module-level."""
-    return getattr(request.app.state, "shadow_manager", _shadow_manager)
+    """Get the ShadowModeManager from app state."""
+    manager = getattr(request.app.state, "shadow_manager", None)
+    if manager is None:
+        raise HTTPException(status_code=503, detail="Shadow manager not available")
+    return manager
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +252,7 @@ async def staff_audit_page(request: Request) -> HTMLResponse:
 @router.get("/api/staff/sessions")
 async def api_staff_sessions(request: Request) -> list[dict[str, Any]]:
     """Return all active sessions with shadow mode status."""
+    _require_staff(request)
     session_manager = request.app.state.session_manager
     shadow_manager = get_shadow_manager(request)
     sessions = session_manager.list_active_sessions()
@@ -271,6 +281,7 @@ async def api_staff_audit(
     session_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Query audit log entries with optional filters."""
+    _require_staff(request)
     audit_logger = getattr(request.app.state, "audit_logger", None)
     if audit_logger is None:
         return []
@@ -308,6 +319,7 @@ async def api_staff_audit(
 @router.post("/api/staff/feedback")
 async def api_submit_feedback(request: Request, body: FeedbackRequest) -> dict[str, Any]:
     """Submit feedback/flag on a message."""
+    _require_staff(request)
     # Validate flag_type
     try:
         flag_type = FlagType(body.flag_type)
@@ -358,6 +370,7 @@ async def api_list_feedback(
     session_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """List all feedback entries, optionally filtered by session."""
+    _require_staff(request)
     feedback_store = get_feedback_store(request)
 
     if session_id:
@@ -382,6 +395,7 @@ async def api_list_feedback(
 @router.post("/api/staff/shadow")
 async def api_toggle_shadow(request: Request, body: ShadowToggleRequest) -> dict[str, Any]:
     """Toggle shadow mode for a session."""
+    _require_staff(request)
     shadow_manager = get_shadow_manager(request)
     new_state = shadow_manager.toggle(body.session_id, body.enabled)
     return {
@@ -398,13 +412,12 @@ async def api_toggle_shadow(request: Request, body: ShadowToggleRequest) -> dict
 @router.get("/api/staff/approvals")
 async def api_list_approvals(request: Request) -> list[dict[str, Any]]:
     """List pending approval requests."""
+    _require_staff(request)
     approval_gate = getattr(request.app.state, "approval_gate", None)
     if approval_gate is None:
         return []
     from municipal.core.types import ApprovalStatus
-    requests = [
-        r for r in approval_gate._requests.values()
-    ]
+    requests = approval_gate.list_all_requests()
     return [
         {
             "request_id": r.request_id,
@@ -423,6 +436,7 @@ async def api_list_approvals(request: Request) -> list[dict[str, Any]]:
 @router.get("/api/staff/approvals/{request_id}")
 async def api_get_approval(request_id: str, request: Request) -> dict[str, Any]:
     """Get approval request detail."""
+    _require_staff(request)
     approval_gate = getattr(request.app.state, "approval_gate", None)
     if approval_gate is None:
         raise HTTPException(status_code=503, detail="Approval gate not available")
@@ -455,6 +469,7 @@ async def api_approve_request(
     request_id: str, request: Request, body: ApprovalActionRequest | None = None
 ) -> dict[str, Any]:
     """Approve an approval request."""
+    _require_staff(request)
     approval_gate = getattr(request.app.state, "approval_gate", None)
     if approval_gate is None:
         raise HTTPException(status_code=503, detail="Approval gate not available")
@@ -473,6 +488,7 @@ async def api_deny_request(
     request_id: str, body: ApprovalActionRequest, request: Request
 ) -> dict[str, Any]:
     """Deny an approval request."""
+    _require_staff(request)
     approval_gate = getattr(request.app.state, "approval_gate", None)
     if approval_gate is None:
         raise HTTPException(status_code=503, detail="Approval gate not available")
@@ -488,6 +504,7 @@ async def api_deny_request(
 @router.get("/api/staff/metrics")
 async def api_metrics(request: Request) -> dict[str, Any]:
     """Metrics dashboard snapshot."""
+    _require_staff(request)
     metrics_service = getattr(request.app.state, "metrics_service", None)
     if metrics_service is None:
         return {"error": "Metrics service not available"}
@@ -498,6 +515,7 @@ async def api_metrics(request: Request) -> dict[str, Any]:
 @router.get("/api/staff/metrics/adapters")
 async def api_adapter_metrics(request: Request) -> dict[str, Any]:
     """Adapter health and usage metrics."""
+    _require_staff(request)
     registry = getattr(request.app.state, "adapter_registry", None)
     if registry is None:
         return {"adapters": []}
@@ -519,6 +537,7 @@ async def api_takeover_session(
     session_id: str, request: Request, body: TakeoverRequest | None = None
 ) -> dict[str, Any]:
     """Staff takes over a session."""
+    _require_staff(request)
     takeover_mgr = getattr(request.app.state, "takeover_manager", None)
     if takeover_mgr is None:
         raise HTTPException(status_code=503, detail="Takeover manager not available")
@@ -529,6 +548,7 @@ async def api_takeover_session(
 @router.post("/api/staff/sessions/{session_id}/release")
 async def api_release_session(session_id: str, request: Request) -> dict[str, Any]:
     """Release a taken-over session."""
+    _require_staff(request)
     takeover_mgr = getattr(request.app.state, "takeover_manager", None)
     if takeover_mgr is None:
         raise HTTPException(status_code=503, detail="Takeover manager not available")
@@ -550,6 +570,7 @@ def _get_comparison_store(request: Request) -> ShadowComparisonStore:
 @router.get("/api/staff/shadow/comparisons")
 async def api_shadow_comparisons(request: Request) -> list[dict[str, Any]]:
     """List all shadow comparison results."""
+    _require_staff(request)
     store = _get_comparison_store(request)
     return [c.model_dump(mode="json") for c in store.list_all()]
 
@@ -557,6 +578,7 @@ async def api_shadow_comparisons(request: Request) -> list[dict[str, Any]]:
 @router.get("/api/staff/shadow/stats")
 async def api_shadow_stats(request: Request) -> dict[str, Any]:
     """Get shadow mode divergence statistics."""
+    _require_staff(request)
     store = _get_comparison_store(request)
     return store.stats()
 
@@ -579,6 +601,7 @@ class CandidateModelRequest(BaseModel):
 @router.post("/api/staff/models/candidate")
 async def api_set_candidate(body: CandidateModelRequest, request: Request) -> dict[str, Any]:
     """Register a candidate model for shadow testing."""
+    _require_staff(request)
     model_registry = getattr(request.app.state, "model_registry", None)
     if model_registry is None:
         raise HTTPException(status_code=503, detail="Model registry not available")
@@ -602,6 +625,7 @@ async def api_set_candidate(body: CandidateModelRequest, request: Request) -> di
 @router.get("/api/staff/models")
 async def api_list_models(request: Request) -> dict[str, Any]:
     """List production and candidate model configurations."""
+    _require_staff(request)
     model_registry = getattr(request.app.state, "model_registry", None)
     if model_registry is None:
         raise HTTPException(status_code=503, detail="Model registry not available")
@@ -611,6 +635,7 @@ async def api_list_models(request: Request) -> dict[str, Any]:
 @router.post("/api/staff/models/promote")
 async def api_promote_candidate(request: Request) -> dict[str, Any]:
     """Promote the candidate model to production."""
+    _require_staff(request)
     model_registry = getattr(request.app.state, "model_registry", None)
     if model_registry is None:
         raise HTTPException(status_code=503, detail="Model registry not available")
@@ -618,7 +643,7 @@ async def api_promote_candidate(request: Request) -> dict[str, Any]:
         promoted = model_registry.promote_candidate()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"status": "promoted", "production": promoted.model_dump()}
+    return {"status": "promoted", "production": promoted.model_dump(exclude={"api_key"})}
 
 
 # ---------------------------------------------------------------------------
@@ -638,6 +663,7 @@ async def api_staff_message(
     session_id: str, body: StaffMessageRequest, request: Request
 ) -> dict[str, Any]:
     """Staff sends a direct message to a session."""
+    _require_staff(request)
     session_manager = request.app.state.session_manager
     session = session_manager.get_session(session_id)
     if session is None:

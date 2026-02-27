@@ -29,10 +29,10 @@ class FeeLineItem(BaseModel):
     description: str
     amount: float
     quantity: float = 1.0
-    subtotal: float = 0.0
+    subtotal: float | None = None
 
     def model_post_init(self, __context: Any) -> None:
-        if self.subtotal == 0.0:
+        if self.subtotal is None:
             self.subtotal = round(self.amount * self.quantity, 2)
 
 
@@ -42,13 +42,15 @@ class FeeEstimate(BaseModel):
     case_id: str | None = None
     wizard_type: str
     line_items: list[FeeLineItem] = Field(default_factory=list)
-    total: float = 0.0
+    total: float | None = None
     classification: DataClassification = DataClassification.RESTRICTED
     computed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def model_post_init(self, __context: Any) -> None:
-        if self.total == 0.0 and self.line_items:
-            self.total = round(sum(item.subtotal for item in self.line_items), 2)
+        if self.total is None and self.line_items:
+            self.total = round(sum(item.subtotal for item in self.line_items if item.subtotal is not None), 2)
+        elif self.total is None:
+            self.total = 0.0
 
 
 class FeeScheduleEntry(BaseModel):

@@ -196,8 +196,10 @@ def test_app():
 
 @pytest.fixture()
 def client(test_app):
-    """Create a TestClient from the test app."""
-    return TestClient(test_app)
+    """Create a TestClient with staff auth from the test app."""
+    from tests.conftest import install_staff_token
+    token = install_staff_token(test_app)
+    return TestClient(test_app, headers={"Authorization": f"Bearer {token}"})
 
 
 class TestStaffSessionsAPI:

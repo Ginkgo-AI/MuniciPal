@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from municipal.core.types import ApprovalStatus
 from municipal.intake.store import IntakeStore
 from municipal.review.models import SunshineReportData
+
+logger = logging.getLogger(__name__)
 
 
 class SunshineReportGenerator:
@@ -52,7 +55,7 @@ class SunshineReportGenerator:
         if self._approval:
             try:
                 pending = self._approval.pending_requests
-                all_requests = list(self._approval._requests.values())
+                all_requests = self._approval.list_all_requests()
                 approved = [r for r in all_requests if r.status == ApprovalStatus.APPROVED]
                 denied = [r for r in all_requests if r.status == ApprovalStatus.DENIED]
                 approval_stats = {
@@ -62,7 +65,7 @@ class SunshineReportGenerator:
                     "denied": len(denied),
                 }
             except Exception:
-                pass
+                logger.exception("Failed to compute approval stats")
 
         # FOIA metrics
         foia_metrics: dict[str, Any] = {
@@ -86,7 +89,7 @@ class SunshineReportGenerator:
                     "by_status": self._count_by_attr(all_notifs, "status"),
                 }
             except Exception:
-                pass
+                logger.exception("Failed to compute notification summary")
 
         return SunshineReportData(
             total_cases=len(cases),

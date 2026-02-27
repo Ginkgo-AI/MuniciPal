@@ -127,11 +127,18 @@ class NotificationEngine:
         return result
 
     def _render(self, template_str: str, context: dict[str, Any]) -> str:
-        """Simple template rendering with {key} substitution."""
-        result = template_str
-        for key, value in context.items():
-            result = result.replace(f"{{{key}}}", str(value))
-        return result
+        """Simple template rendering with {key} substitution.
+
+        Uses a single-pass regex replacement to avoid double-substitution
+        (where a substituted value could itself contain a {placeholder}).
+        Unrecognised placeholders are preserved in the output.
+        """
+        import re
+        str_context = {k: str(v) for k, v in context.items()}
+        def _replace(m: re.Match) -> str:
+            key = m.group(1)
+            return str_context.get(key, m.group(0))
+        return re.sub(r"\{(\w+)\}", _replace, template_str)
 
     def _log_audit(self, session_id: str, action: str, notification: Notification) -> None:
         if self._audit is None:

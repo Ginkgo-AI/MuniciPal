@@ -51,3 +51,7 @@ class IntakeStore:
             c for c in self._cases.values()
             if c.wizard_id == wizard_id
         ]
+
+    @property
+    def case_count(self) -> int:
+        return len(self._cases)

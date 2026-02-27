@@ -134,7 +134,7 @@ class BaseBridgeAdapter(ABC):
                 del self._cache[k]
 
     def _cache_key(self, request: NormalizedRequest) -> str:
-        params_hash = hashlib.md5(
+        params_hash = hashlib.sha256(
             json.dumps(request.params, sort_keys=True).encode()
         ).hexdigest()
         return f"{request.session_id}:{request.operation}:{params_hash}"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ import yaml
 from municipal.core.types import DataClassification
 from municipal.review.models import Confidence, RedactionReport, RedactionSuggestion
 
+logger = logging.getLogger(__name__)
 
 _DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[3] / "config" / "redaction_rules.yml"
 
@@ -32,9 +34,19 @@ class RedactionEngine:
     def __init__(self, config_path: str | Path | None = None) -> None:
         self._config_path = Path(config_path) if config_path else _DEFAULT_CONFIG_PATH
         self._pattern_rules: list[dict[str, Any]] = []
+        self._compiled_patterns: dict[str, re.Pattern] = {}
         self._field_rules: list[dict[str, Any]] = []
+        self._compiled_field_patterns: dict[str, re.Pattern] = {}
         self._classification_threshold: str = "sensitive"
         self._load_config()
+
+    def _compile_pattern(self, pattern: str, label: str) -> re.Pattern | None:
+        """Compile a regex pattern with validation. Returns None if invalid."""
+        try:
+            return re.compile(pattern)
+        except re.error as exc:
+            logger.warning("Invalid regex pattern in %s: %r — %s", label, pattern, exc)
+            return None
 
     def _load_config(self) -> None:
         if not self._config_path.exists():
@@ -45,6 +57,21 @@ class RedactionEngine:
         self._pattern_rules = data.get("pattern_rules", [])
         self._field_rules = data.get("field_rules", [])
         self._classification_threshold = data.get("classification_threshold", "sensitive")
+
+        # Pre-compile all regex patterns at load time
+        for rule in self._pattern_rules:
+            pattern = rule.get("pattern", "")
+            if pattern:
+                compiled = self._compile_pattern(pattern, "pattern_rules")
+                if compiled:
+                    self._compiled_patterns[pattern] = compiled
+
+        for rule in self._field_rules:
+            pattern = rule.get("field_pattern", "")
+            if pattern:
+                compiled = self._compile_pattern(pattern, "field_rules")
+                if compiled:
+                    self._compiled_field_patterns[pattern] = compiled
 
     def scan(
         self,
@@ -77,7 +104,10 @@ class RedactionEngine:
                 pattern = rule.get("pattern", "")
                 if not pattern:
                     continue
-                if re.search(pattern, str_value):
+                compiled = self._compiled_patterns.get(pattern)
+                if compiled is None:
+                    continue
+                if compiled.search(str_value):
                     snippet = self._make_snippet(str_value)
                     suggestions.append(RedactionSuggestion(
                         field_id=field_id,
@@ -114,7 +144,8 @@ class RedactionEngine:
             # Check field-name-based rules
             for rule in self._field_rules:
                 field_pattern = rule.get("field_pattern", "")
-                if field_pattern and re.search(field_pattern, field_id):
+                compiled_fp = self._compiled_field_patterns.get(field_pattern)
+                if compiled_fp and compiled_fp.search(field_id):
                     already_flagged = any(
                         s.field_id == field_id for s in suggestions
                     )

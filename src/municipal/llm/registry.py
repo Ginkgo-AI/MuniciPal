@@ -46,6 +46,6 @@ class ModelRegistry:
 
     def summary(self) -> dict[str, dict | None]:
         return {
-            "production": self._production.model_dump() if self._production else None,
-            "candidate": self._candidate.model_dump() if self._candidate else None,
+            "production": self._production.model_dump(exclude={"api_key"}) if self._production else None,
+            "candidate": self._candidate.model_dump(exclude={"api_key"}) if self._candidate else None,
         }

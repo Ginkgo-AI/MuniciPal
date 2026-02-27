@@ -42,8 +42,8 @@ class TestMockPermitStatusAdapter:
     def test_lookup_by_id_not_found(self) -> None:
         req = NormalizedRequest(operation="lookup_by_id", params={"permit_id": "NONEXISTENT"})
         resp = self.adapter.query(req)
-        assert resp.success
-        assert resp.data is None
+        assert not resp.success
+        assert "not found" in resp.error.lower()
 
     def test_lookup_by_parcel(self) -> None:
         req = NormalizedRequest(

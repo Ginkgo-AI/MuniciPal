@@ -87,14 +87,11 @@ async def start_wizard(
     wizard_id: str, request: Request
 ) -> StartWizardResponse:
     engine = request.app.state.wizard_engine
-    # Use a default session for now; real impl would extract from auth
     session_manager = request.app.state.session_manager
-    sessions = session_manager.list_active_sessions()
-    if sessions:
-        session = sessions[0]
-    else:
-        from municipal.core.types import SessionType
-        session = session_manager.create_session(SessionType.ANONYMOUS)
+    # Create a dedicated session for this wizard to avoid cross-user binding
+    from municipal.core.types import SessionType
+    auth_tier = getattr(request.state, "auth_tier", SessionType.ANONYMOUS)
+    session = session_manager.create_session(auth_tier)
 
     try:
         state = engine.start_wizard(wizard_id, session.session_id, session.session_type)
@@ -142,7 +139,11 @@ async def submit_step(
     try:
         session_type = SessionType(body.session_type)
     except ValueError:
-        session_type = SessionType.ANONYMOUS
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid session_type: {body.session_type!r}. "
+            f"Valid values: {[t.value for t in SessionType]}",
+        )
 
     try:
         state = engine.submit_step(state_id, step_id, body.data, session_type)
@@ -275,7 +276,7 @@ async def list_cases(request: Request, session_id: str | None = None) -> list[Ca
     if session_id:
         cases = store.list_cases(session_id)
     else:
-        cases = list(store._cases.values())
+        cases = store.list_all_cases()
 
     return [
         CaseResponse(

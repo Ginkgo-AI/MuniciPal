@@ -121,7 +121,7 @@ class MockPermitStatusAdapter(BaseBridgeAdapter):
             result = [p for p in self._permits if p["permit_id"] == permit_id]
             if result:
                 return NormalizedResponse(success=True, data=result[0])
-            return NormalizedResponse(success=True, data=None)
+            return NormalizedResponse(success=False, error=f"Permit {permit_id!r} not found")
 
         if op == Operation.LOOKUP_BY_PARCEL:
             parcel_id = params.get("parcel_id", "")

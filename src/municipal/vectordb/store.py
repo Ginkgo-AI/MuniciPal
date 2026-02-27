@@ -173,8 +173,8 @@ class VectorStore:
         col_name = self._collection_name(collection)
         try:
             self._client.delete_collection(name=col_name)
-        except Exception:
-            pass  # Collection may not exist
+        except ValueError:
+            pass  # Collection does not exist
 
     def list_collections(self) -> list[str]:
         """List all collection names managed by this store."""

@@ -6,6 +6,7 @@ checks, plus serves the browser-based chat UI.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -150,10 +151,10 @@ def create_app(
         version="0.1.0",
     )
 
-    # CORS for development
+    # CORS — explicit origins required when credentials are enabled
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:8000", "http://localhost:3000", "http://127.0.0.1:8000"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -190,7 +191,13 @@ def create_app(
 
     try:
         approval_gate = ApprovalGate()
+    except FileNotFoundError:
+        logging.getLogger(__name__).warning(
+            "Approval gate config not found at default path; approval gate disabled"
+        )
+        approval_gate = None
     except Exception:
+        logging.getLogger(__name__).exception("Failed to initialize approval gate")
         approval_gate = None
 
     # Phase 3: Graph store + notifications
@@ -341,10 +348,11 @@ def create_app(
                 status_code=404,
                 detail=f"Session {body.session_id!r} not found",
             )
-        except Exception as exc:
+        except Exception:
+            logging.getLogger(__name__).exception("Unexpected error in chat endpoint")
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal error: {exc}",
+                detail="An internal error occurred. Please try again or contact staff.",
             )
 
         return ChatResponse(

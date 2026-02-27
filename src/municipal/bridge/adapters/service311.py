@@ -170,7 +170,7 @@ class Mock311Adapter(BaseBridgeAdapter):
         ticket_id = params.get("ticket_id", "")
         ticket = self._tickets.get(ticket_id)
         if ticket is None:
-            return NormalizedResponse(success=True, data=None)
+            return NormalizedResponse(success=False, error=f"Ticket {ticket_id!r} not found")
         return NormalizedResponse(success=True, data=ticket.model_dump(mode="json"))
 
     def _create_ticket(self, params: dict[str, Any]) -> NormalizedResponse:

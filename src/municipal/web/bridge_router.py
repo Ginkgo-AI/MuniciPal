@@ -83,9 +83,7 @@ async def get_permit(permit_id: str, request: Request) -> dict[str, Any]:
     )
     response = adapter.query(normalized)
     if not response.success:
-        raise HTTPException(status_code=500, detail=response.error)
-    if response.data is None:
-        raise HTTPException(status_code=404, detail=f"Permit {permit_id!r} not found")
+        raise HTTPException(status_code=404, detail=response.error or f"Permit {permit_id!r} not found")
     return response.data
 
 
@@ -162,9 +160,7 @@ async def get_311_ticket(ticket_id: str, request: Request) -> dict[str, Any]:
     )
     response = adapter.query(normalized)
     if not response.success:
-        raise HTTPException(status_code=500, detail=response.error)
-    if response.data is None:
-        raise HTTPException(status_code=404, detail=f"Ticket {ticket_id!r} not found")
+        raise HTTPException(status_code=404, detail=response.error or f"Ticket {ticket_id!r} not found")
     return response.data
 
 

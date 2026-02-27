@@ -54,8 +54,8 @@ class TestMock311Adapter:
     def test_get_ticket_not_found(self) -> None:
         req = NormalizedRequest(operation="get_ticket", params={"ticket_id": "NOPE"})
         resp = self.adapter.query(req)
-        assert resp.success
-        assert resp.data is None
+        assert not resp.success
+        assert "not found" in resp.error.lower()
 
     def test_create_ticket(self) -> None:
         req = NormalizedRequest(

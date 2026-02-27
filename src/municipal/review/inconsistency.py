@@ -126,7 +126,7 @@ class InconsistencyDetector:
         except (ValueError, TypeError):
             return None
 
-        today = date.today()
+        today = datetime.now(timezone.utc).date()
 
         if expected == "future" and field_date < today:
             return InconsistencyFinding(

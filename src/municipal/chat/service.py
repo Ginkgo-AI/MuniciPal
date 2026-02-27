@@ -62,6 +62,7 @@ class ChatService:
         self._shadow_manager = shadow_manager
         self._comparison_store = comparison_store
         self._takeover_manager = takeover_manager
+        self._background_tasks: set[asyncio.Task] = set()
 
     async def respond(
         self,
@@ -188,13 +189,15 @@ class ChatService:
             and self._shadow_manager.is_active(session_id)
             and self._shadow_manager.shadow_llm_config is not None
         ):
-            asyncio.create_task(
+            task = asyncio.create_task(
                 self._run_shadow_comparison(
                     session_id=session_id,
                     user_message=user_message,
                     production_response=answer_text,
                 )
             )
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
 
         return assistant_msg
 

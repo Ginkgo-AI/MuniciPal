@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 
 from municipal.core.config import LLMConfig
@@ -17,6 +19,7 @@ class OllamaClient(LLMClient):
             base_url=config.base_url,
             timeout=httpx.Timeout(config.timeout_seconds),
         )
+        self._max_retries = config.max_retries
 
     # -- public API ----------------------------------------------------------
 
@@ -67,6 +70,24 @@ class OllamaClient(LLMClient):
     # -- internal ------------------------------------------------------------
 
     async def _post(self, path: str, payload: dict) -> dict:
-        resp = await self._http.post(path, json=payload)
-        resp.raise_for_status()
-        return resp.json()
+        last_exc: Exception | None = None
+        for attempt in range(self._max_retries + 1):
+            try:
+                resp = await self._http.post(path, json=payload)
+                if resp.status_code >= 500 and attempt < self._max_retries:
+                    last_exc = httpx.HTTPStatusError(
+                        f"Server error {resp.status_code}",
+                        request=resp.request,
+                        response=resp,
+                    )
+                    await asyncio.sleep(2**attempt * 0.5)
+                    continue
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.TransportError as exc:
+                last_exc = exc
+                if attempt < self._max_retries:
+                    await asyncio.sleep(2**attempt * 0.5)
+                    continue
+                raise
+        raise last_exc  # type: ignore[misc]

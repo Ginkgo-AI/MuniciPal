@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,7 @@ class AuditLogger:
         self._log_dir = Path(self._config.log_dir)
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._log_path = self._log_dir / log_file
+        self._lock = threading.Lock()
         self._last_hash: str = self._compute_genesis_hash()
 
         # If the log file already exists, recover the last hash from the chain
@@ -107,21 +109,22 @@ class AuditLogger:
         Returns:
             The AuditEntry with computed hash metadata.
         """
-        event_json = event.model_dump_json()
-        entry_hash = self._compute_hash(self._last_hash, event_json)
+        with self._lock:
+            event_json = event.model_dump_json()
+            entry_hash = self._compute_hash(self._last_hash, event_json)
 
-        entry = AuditEntry(
-            event=event,
-            previous_hash=self._last_hash,
-            entry_hash=entry_hash,
-        )
+            entry = AuditEntry(
+                event=event,
+                previous_hash=self._last_hash,
+                entry_hash=entry_hash,
+            )
 
-        # Append to JSONL file
-        with open(self._log_path, "a") as fh:
-            fh.write(json.dumps(entry.to_dict()) + "\n")
+            # Append to JSONL file
+            with open(self._log_path, "a") as fh:
+                fh.write(json.dumps(entry.to_dict()) + "\n")
 
-        self._last_hash = entry_hash
-        return entry
+            self._last_hash = entry_hash
+            return entry
 
     def verify_chain(self) -> bool:
         """Verify the integrity of the entire hash chain.

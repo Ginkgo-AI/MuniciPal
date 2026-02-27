@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -56,7 +54,7 @@ class FeeEstimateRequest(BaseModel):
 class PaymentInitiateRequest(BaseModel):
     """Request body for initiating a payment."""
 
-    amount: float
+    amount: float = Field(gt=0)
     requestor: str = "resident"
 
 

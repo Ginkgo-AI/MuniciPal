@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from municipal.graph.models import RelationshipType
@@ -93,12 +93,16 @@ class SummaryEngine:
         else:
             cases = self._store.list_all_cases()
 
-        # Filter by date range
+        # Filter by date range (assume UTC if no timezone provided)
         if date_from:
             from_dt = datetime.fromisoformat(date_from)
+            if from_dt.tzinfo is None:
+                from_dt = from_dt.replace(tzinfo=timezone.utc)
             cases = [c for c in cases if c.created_at >= from_dt]
         if date_to:
             to_dt = datetime.fromisoformat(date_to)
+            if to_dt.tzinfo is None:
+                to_dt = to_dt.replace(tzinfo=timezone.utc)
             cases = [c for c in cases if c.created_at <= to_dt]
 
         by_status: dict[str, int] = {}

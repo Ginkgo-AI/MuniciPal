@@ -38,7 +38,7 @@ def validate_regex(value: Any, pattern: str = "", **_kwargs: Any) -> str | None:
 def validate_email(value: Any, **_kwargs: Any) -> str | None:
     if value is None or not isinstance(value, str) or not value.strip():
         return None
-    pattern = r"[^@\s]+@[^@\s]+\.[^@\s]+"
+    pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
     if not re.fullmatch(pattern, value):
         return "Please enter a valid email address."
     return None
