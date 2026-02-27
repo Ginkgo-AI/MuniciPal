@@ -1,0 +1,22 @@
+{
+  "common": {
+    "appName": "Munici-Pal",
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "send": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "chat": {
+    "title": "Chatea con Munici-Pal",
+    "subtitle": "Pregunta sobre permisos, servicios y más",
+    "placeholder": "Escribe tu pregunta...",
+    "empty": "Comienza una conversación escribiendo abajo",
+    "sourcesCited": "{count} fuente(s) citada(s)"
+  },
+  "intake": {
+    "title": "Servicios Municipales",
+    "subtitle": "Explora los servicios disponibles y comienza una solicitud",
+    "noServices": "No hay servicios disponibles.",
+    "steps": "{count} pasos"
+  }
+}

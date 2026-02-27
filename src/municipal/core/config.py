@@ -110,6 +110,16 @@ class AuthConfig(BaseSettings):
     token_expiry_minutes: int = 60
 
 
+class DatabaseConfig(BaseSettings):
+    """Database configuration for PostgreSQL persistence."""
+
+    model_config = {"env_prefix": "MUNICIPAL_DB_"}
+
+    database_url: str | None = None
+    echo: bool = False
+    pool_size: int = 5
+
+
 class Settings(BaseSettings):
     """Root application settings."""
 
@@ -129,3 +139,4 @@ class Settings(BaseSettings):
     bridge: BridgeConfig = Field(default_factory=BridgeConfig)
     notification: NotificationConfig = Field(default_factory=NotificationConfig)
     auth: AuthConfig = Field(default_factory=AuthConfig)
+    db: DatabaseConfig = Field(default_factory=DatabaseConfig)

@@ -1,0 +1,22 @@
+{
+  "common": {
+    "appName": "Munici-Pal",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "send": "Send",
+    "cancel": "Cancel"
+  },
+  "chat": {
+    "title": "Chat with Munici-Pal",
+    "subtitle": "Ask about permits, services, and more",
+    "placeholder": "Type your question...",
+    "empty": "Start a conversation by typing below",
+    "sourcesCited": "{count} source(s) cited"
+  },
+  "intake": {
+    "title": "City Services",
+    "subtitle": "Browse available services and start an application",
+    "noServices": "No services available.",
+    "steps": "{count} steps"
+  }
+}

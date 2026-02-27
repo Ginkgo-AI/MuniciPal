@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: municipal-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: municipal
+      POSTGRES_PASSWORD: municipal_dev
+      POSTGRES_DB: municipal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U municipal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   ollama:
     image: ollama/ollama:latest
     container_name: municipal-ollama
@@ -38,5 +56,6 @@ services:
       retries: 3
 
 volumes:
+  postgres_data:
   ollama_data:
   chroma_data:

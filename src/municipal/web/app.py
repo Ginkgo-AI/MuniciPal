@@ -7,6 +7,7 @@ checks, plus serves the browser-based chat UI.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -121,6 +122,53 @@ class HealthResponse(BaseModel):
     version: str = "0.1.0"
 
 
+def _is_postgres_url(url: str | None) -> bool:
+    """Check if the URL is a PostgreSQL connection string."""
+    if not url:
+        return False
+    return url.startswith("postgresql") or url.startswith("postgres")
+
+
+def _create_postgres_stores(settings: Settings) -> dict[str, Any]:
+    """Instantiate PostgreSQL-backed repositories.
+
+    Returns a dict of store names to repository instances plus the DatabaseManager.
+    """
+    from municipal.db.engine import DatabaseManager
+    from municipal.repositories.postgres.approvals import PostgresApprovalRepository
+    from municipal.repositories.postgres.audit import PostgresAuditRepository
+    from municipal.repositories.postgres.auth_tokens import PostgresAuthTokenRepository
+    from municipal.repositories.postgres.feedback import PostgresFeedbackRepository
+    from municipal.repositories.postgres.graph import PostgresGraphRepository
+    from municipal.repositories.postgres.intake import PostgresIntakeRepository
+    from municipal.repositories.postgres.notifications import PostgresNotificationRepository
+    from municipal.repositories.postgres.payments import PostgresPaymentRepository
+    from municipal.repositories.postgres.sessions import PostgresSessionRepository
+    from municipal.repositories.postgres.shadow import PostgresShadowComparisonRepository
+    from municipal.repositories.postgres.takeovers import PostgresTakeoverRepository
+
+    db = DatabaseManager(
+        database_url=settings.db.database_url,
+        echo=settings.db.echo,
+        pool_size=settings.db.pool_size,
+    )
+
+    return {
+        "db_manager": db,
+        "session_manager": PostgresSessionRepository(db),
+        "intake_store": PostgresIntakeRepository(db),
+        "notification_store": PostgresNotificationRepository(db),
+        "payment_store": PostgresPaymentRepository(db),
+        "feedback_store": PostgresFeedbackRepository(db),
+        "approval_gate": PostgresApprovalRepository(db),
+        "graph_store": PostgresGraphRepository(db),
+        "comparison_store": PostgresShadowComparisonRepository(db),
+        "audit_logger": PostgresAuditRepository(db, config=settings.audit),
+        "auth_token_store": PostgresAuthTokenRepository(db),
+        "takeover_manager": PostgresTakeoverRepository(db),
+    }
+
+
 # --- Application factory ---
 
 
@@ -145,34 +193,55 @@ def create_app(
     if settings is None:
         settings = Settings()
 
+    # Check if PostgreSQL is configured
+    use_postgres = _is_postgres_url(settings.db.database_url)
+    pg_stores: dict[str, Any] = {}
+    db_manager = None
+
+    if use_postgres:
+        pg_stores = _create_postgres_stores(settings)
+        db_manager = pg_stores["db_manager"]
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+        if db_manager is not None:
+            await db_manager.close()
+
     app = FastAPI(
         title="Munici-Pal Digital Librarian",
         description="AI-powered municipal information assistant",
         version="0.1.0",
+        lifespan=lifespan,
     )
 
     # CORS — explicit origins required when credentials are enabled
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:8000", "http://localhost:3000", "http://127.0.0.1:8000"],
+        allow_origins=[
+            "http://localhost:8000",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:8000",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # Dependencies
-    session_manager = SessionManager()
+    # Dependencies — use Postgres repos if available, else in-memory
+    session_manager = pg_stores.get("session_manager") or SessionManager()
 
     if audit_logger is None:
-        audit_logger = AuditLogger(config=settings.audit)
+        audit_logger = pg_stores.get("audit_logger") or AuditLogger(config=settings.audit)
 
     if rag_pipeline is None:
         rag_pipeline = create_rag_pipeline(settings)
 
     # Phase 5: Shadow + takeover managers (created early for ChatService)
     shadow_manager = ShadowModeManager()
-    comparison_store = ShadowComparisonStore()
-    takeover_manager = SessionTakeoverManager()
+    comparison_store = pg_stores.get("comparison_store") or ShadowComparisonStore()
+    takeover_manager = pg_stores.get("takeover_manager") or SessionTakeoverManager()
 
     chat_service = ChatService(
         rag_pipeline=rag_pipeline,
@@ -184,25 +253,29 @@ def create_app(
     )
 
     # Phase 2: Intake services
-    intake_store = IntakeStore()
+    intake_store = pg_stores.get("intake_store") or IntakeStore()
     validation_engine = ValidationEngine()
     gis_service = MockGISService()
     i18n_engine = I18nEngine()
 
-    try:
-        approval_gate = ApprovalGate()
-    except FileNotFoundError:
-        logging.getLogger(__name__).warning(
-            "Approval gate config not found at default path; approval gate disabled"
-        )
-        approval_gate = None
-    except Exception:
-        logging.getLogger(__name__).exception("Failed to initialize approval gate")
-        approval_gate = None
+    approval_gate = pg_stores.get("approval_gate")
+    if approval_gate is None:
+        try:
+            approval_gate = ApprovalGate()
+        except FileNotFoundError:
+            logging.getLogger(__name__).warning(
+                "Approval gate config not found at default path; approval gate disabled"
+            )
+            approval_gate = None
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Failed to initialize approval gate — refusing to start without governance controls"
+            )
+            raise
 
     # Phase 3: Graph store + notifications
-    graph_store = GraphStore()
-    notification_store = NotificationStore()
+    graph_store = pg_stores.get("graph_store") or GraphStore()
+    notification_store = pg_stores.get("notification_store") or NotificationStore()
     notification_service = MockNotificationService(store=notification_store)
     notification_engine = NotificationEngine(
         service=notification_service,
@@ -237,7 +310,7 @@ def create_app(
     fee_engine = FeeEngine()
     tax_engine = TaxEngine()
     deadline_engine = DeadlineEngine()
-    payment_store = PaymentStore()
+    payment_store = pg_stores.get("payment_store") or PaymentStore()
 
     # Phase 5: Model registry + LLM latency tracker
     model_registry = ModelRegistry(production=settings.llm)
@@ -247,7 +320,7 @@ def create_app(
     app.state.chat_service = chat_service
     app.state.session_manager = session_manager
     app.state.audit_logger = audit_logger
-    app.state.feedback_store = FeedbackStore()
+    app.state.feedback_store = pg_stores.get("feedback_store") or FeedbackStore()
     app.state.shadow_manager = shadow_manager
     app.state.comparison_store = comparison_store
     app.state.intake_store = intake_store
@@ -263,6 +336,7 @@ def create_app(
     app.state.notification_service = notification_service
     app.state.notification_engine = notification_engine
     app.state.auth_provider = auth_provider
+    app.state.auth_token_store = pg_stores.get("auth_token_store") or auth_provider
     app.state.approval_gate = approval_gate
 
     # Phase 3/5: Mission Control v1 services with enhanced metrics
@@ -282,6 +356,10 @@ def create_app(
     app.state.payment_store = payment_store
     app.state.model_registry = model_registry
     app.state.llm_tracker = llm_tracker
+
+    # Store DB manager for lifespan cleanup
+    if db_manager is not None:
+        app.state.db_manager = db_manager
 
     # Phase 4: Review services
     redaction_engine = RedactionEngine()
@@ -374,7 +452,9 @@ def create_app(
                 detail=f"Invalid session type: {session_type_str!r}",
             )
 
-        session = session_manager.create_session(session_type=session_type)
+        from municipal.repositories import resolve
+
+        session = await resolve(session_manager.create_session(session_type=session_type))
         return SessionInfo(
             session_id=session.session_id,
             session_type=session.session_type.value,
@@ -386,7 +466,9 @@ def create_app(
     @app.get("/api/sessions/{session_id}", response_model=SessionDetail)
     async def get_session(session_id: str) -> SessionDetail:
         """Get a session with its full message history."""
-        session = session_manager.get_session(session_id)
+        from municipal.repositories import resolve
+
+        session = await resolve(session_manager.get_session(session_id))
         if session is None:
             raise HTTPException(
                 status_code=404,
@@ -417,7 +499,9 @@ def create_app(
     @app.get("/api/sessions", response_model=list[SessionInfo])
     async def list_sessions() -> list[SessionInfo]:
         """List all active sessions (for Mission Control)."""
-        sessions = session_manager.list_active_sessions()
+        from municipal.repositories import resolve
+
+        sessions = await resolve(session_manager.list_active_sessions())
         return [
             SessionInfo(
                 session_id=s.session_id,
