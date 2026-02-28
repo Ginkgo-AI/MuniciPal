@@ -20,6 +20,7 @@
     "placeholder": "Type your question...",
     "empty": "Start a conversation by typing below",
     "sourcesCited": "{count} source(s) cited",
+    "disclaimer": "MuniciPal can make mistakes. Check important information using official city resources.",
     "welcome": "Welcome to MuniciPal",
     "welcomeDesc": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
     "services": {

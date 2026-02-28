@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
 import { Sparkles, FileText, User, Building2 } from "lucide-react";
-import { Card, CardContent } from "@municipal/ui";
+import { Card, CardContent, cn } from "@municipal/ui";
 
 const GRID_SERVICES = [
   { id: "reportIssue", imgSrc: "/images/icon_report_issue.png", prompt: "I need to report an issue." },
@@ -20,10 +20,14 @@ const GRID_SERVICES = [
 
 export function MessageList() {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession(sessionId);
   const createSession = useCreateSession();
   const sendMessage = useSendMessage();
   const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
+
+  const isLoading = createSession.isPending || sendMessage.isPending;
 
   useEffect(() => {
     const handler = (e: Event) => setSessionId((e as CustomEvent).detail);
@@ -32,16 +36,21 @@ export function MessageList() {
   }, []);
 
   const handleSuggestedAction = async (prompt: string) => {
-    let sid = sessionId;
-    if (!sid) {
-      const result = await createSession.mutateAsync();
-      sid = result.session_id;
-      setSessionId(sid);
-      window.dispatchEvent(
-        new CustomEvent("municipal:session", { detail: sid })
-      );
+    setError(null);
+    try {
+      let sid = sessionId;
+      if (!sid) {
+        const result = await createSession.mutateAsync();
+        sid = result.session_id;
+        setSessionId(sid);
+        window.dispatchEvent(
+          new CustomEvent("municipal:session", { detail: sid })
+        );
+      }
+      await sendMessage.mutateAsync({ sessionId: sid, message: prompt });
+    } catch {
+      setError(tCommon("error"));
     }
-    await sendMessage.mutateAsync({ sessionId: sid, message: prompt });
   };
 
   const messages = session?.messages ?? [];
@@ -49,7 +58,11 @@ export function MessageList() {
   if (messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto items-center">
-        <div className="w-full relative h-[240px] md:h-[280px] rounded-[2rem] overflow-hidden shadow-2xl shadow-indigo-500/10 mb-8 border border-border/50 shrink-0">
+        {error && (
+          <p className="text-sm font-medium text-destructive mb-4 text-center bg-destructive/10 py-1.5 rounded-md px-3">{error}</p>
+        )}
+
+        <div className="w-full relative h-[240px] md:h-[280px] rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/10 mb-8 border border-border/50 shrink-0">
           <Image
             src="/images/roanoke_hero.png"
             alt="MuniciPal Cityscape"
@@ -57,7 +70,7 @@ export function MessageList() {
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-end p-6 md:p-8 text-center pb-6 md:pb-8">
             <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 mb-3 md:mb-4 shadow-lg ring-1 ring-white/10">
               <Sparkles className="w-6 h-6" />
@@ -83,12 +96,15 @@ export function MessageList() {
             {GRID_SERVICES.map((action) => (
               <Card
                 key={action.id}
-                onClick={() => handleSuggestedAction(action.prompt)}
-                className="group cursor-pointer hover:border-indigo-500/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-background/60 dark:bg-card/40 border-border/40"
+                onClick={() => !isLoading && handleSuggestedAction(action.prompt)}
+                className={cn(
+                  "group cursor-pointer hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 enabled:active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-ring bg-background/60 dark:bg-card/40 border-border/40",
+                  isLoading && "pointer-events-none opacity-50"
+                )}
                 role="button"
-                tabIndex={0}
+                tabIndex={isLoading ? -1 : 0}
                 onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (!isLoading && (e.key === 'Enter' || e.key === ' ')) {
                     e.preventDefault();
                     handleSuggestedAction(action.prompt);
                   }
@@ -104,7 +120,7 @@ export function MessageList() {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
-                    <h3 className="font-semibold text-[0.85rem] leading-tight text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 break-words">{t(`services.${action.id}`)}</h3>
+                    <h3 className="font-semibold text-[0.85rem] leading-tight text-foreground group-hover:text-primary transition-colors duration-200 break-words">{t(`services.${action.id}`)}</h3>
                   </div>
                   <p className="text-[0.7rem] text-muted-foreground leading-snug mt-auto">
                     {action.prompt}
@@ -129,15 +145,15 @@ export function MessageList() {
               }`}
           >
             {!isUser && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-sm hidden sm:flex">
-                <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm hidden sm:flex">
+                <Building2 className="w-4 h-4 text-primary" />
               </div>
             )}
 
             <div
               className={`max-w-[85%] sm:max-w-[75%] rounded-[20px] px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-sm ${isUser
-                ? "bg-indigo-600 text-white rounded-br-sm shadow-md"
-                : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 text-slate-800 dark:text-slate-200 rounded-bl-sm shadow-sm"
+                ? "bg-primary text-primary-foreground rounded-br-sm shadow-md"
+                : "bg-card/80 backdrop-blur-md border border-border/50 text-foreground rounded-bl-sm shadow-sm"
                 }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -155,8 +171,8 @@ export function MessageList() {
             </div>
 
             {isUser && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border border-slate-300/50 dark:border-slate-700/50 shadow-sm hidden sm:flex">
-                <User className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center border border-border shadow-sm hidden sm:flex">
+                <User className="w-4 h-4 text-secondary-foreground" />
               </div>
             )}
           </div>

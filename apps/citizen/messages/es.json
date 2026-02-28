@@ -20,6 +20,7 @@
     "placeholder": "Escribe tu pregunta...",
     "empty": "Comienza una conversación escribiendo abajo",
     "sourcesCited": "{count} fuente(s) citada(s)",
+    "disclaimer": "MuniciPal puede cometer errores. Verifica la información importante usando recursos oficiales de la ciudad.",
     "welcome": "Bienvenido a MuniciPal",
     "welcomeDesc": "Soy tu asistente de IA para la ciudad. Puedo buscar registros oficiales, enrutar tickets de servicio y responder preguntas.",
     "services": {

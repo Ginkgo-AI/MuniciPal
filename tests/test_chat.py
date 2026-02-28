@@ -1,4 +1,4 @@
-"""Tests for Munici-Pal chat module and web API.
+"""Tests for MuniciPal chat module and web API.
 
 Covers session management, the ChatService response flow (with mocked
 RAG pipeline), and FastAPI endpoint integration tests.
@@ -362,7 +362,7 @@ class TestAPIEndpoints:
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-        assert "Munici-Pal" in response.text
+        assert "MuniciPal" in response.text
         assert "Digital Librarian" in response.text
         assert "Disclaimer" in response.text
 
