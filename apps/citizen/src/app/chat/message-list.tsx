@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
 import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2 } from "lucide-react";
@@ -48,14 +49,32 @@ export function MessageList() {
   if (messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto items-center">
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white mb-4 shadow-lg shadow-indigo-500/20">
-            <Sparkles className="w-6 h-6" />
+        <div className="w-full relative h-[240px] md:h-[280px] rounded-[2rem] overflow-hidden shadow-2xl shadow-indigo-500/10 mb-8 border border-border/50 shrink-0">
+          <Image
+            src="/images/hero-city.png"
+            alt="Munici-Pal Cityscape"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+          <div className="absolute inset-0 flex flex-col items-center justify-end p-6 md:p-8 text-center pb-6 md:pb-8">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 mb-3 md:mb-4 shadow-lg ring-1 ring-white/10">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h2
+              className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1.5 md:mb-2"
+              style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}
+            >
+              {t("welcome")}
+            </h2>
+            <p
+              className="text-slate-200 max-w-lg text-xs md:text-sm leading-relaxed"
+              style={{ textShadow: "0 1px 5px rgba(0,0,0,0.8)" }}
+            >
+              {t("welcomeDesc")}
+            </p>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight text-center mb-2 px-4 text-foreground">{t("welcome")}</h2>
-          <p className="text-center text-muted-foreground max-w-lg px-4 text-sm leading-relaxed">
-            {t("welcomeDesc")}
-          </p>
         </div>
 
         {/* Apple-style Compact Grid with Shadcn Cards */}
