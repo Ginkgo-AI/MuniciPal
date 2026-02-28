@@ -49,7 +49,8 @@ export function MessageList() {
       }
       await sendMessage.mutateAsync({ sessionId: sid, message: prompt });
     } catch {
-      setError(tCommon("error"));
+      setError("The response is taking longer than expected. Please wait a moment — it should appear shortly.");
+      setTimeout(() => setError(null), 10_000);
     }
   };
 

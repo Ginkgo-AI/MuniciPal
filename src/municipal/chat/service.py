@@ -69,7 +69,7 @@ class ChatService:
         self,
         session_id: str,
         user_message: str,
-        collection: str = "default",
+        collection: str = "ordinances",
     ) -> ChatMessage:
         """Process a user message and return an assistant response.
 

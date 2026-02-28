@@ -64,7 +64,10 @@ class VectorStore:
         """Create a ChromaDB client from config."""
         import chromadb
 
-        return chromadb.Client()
+        return chromadb.HttpClient(
+            host=self._config.host,
+            port=self._config.port,
+        )
 
     def _collection_name(self, collection: str) -> str:
         """Prefix the collection name with the configured prefix."""

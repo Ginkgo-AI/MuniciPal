@@ -1,6 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 
-export const API_BASE = "/api";
+export const API_BASE =
+  typeof window !== "undefined"
+    ? "http://localhost:8080/api"
+    : "/api";
 
 export const queryClient = new QueryClient({
   defaultOptions: {

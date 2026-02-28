@@ -23,14 +23,30 @@ _SYSTEM_PROMPT = """\
 You are a helpful municipal government assistant. Answer the resident's \
 question using ONLY the context provided below. Do not use outside knowledge.
 
-For every claim you make, cite the source using the format [Source: <filename>].
+For every claim you make, cite the source using the format [Source: <source name>].
 
 If you cannot find the answer in the provided context, say: \
 "I cannot find the specific policy. Let me connect you with a staff member."
 
+Do NOT include any <think> or reasoning tags in your answer.
+
 Context:
 {context}
+
+/no_think
 """
+
+
+def _strip_think_tokens(text: str) -> str:
+    """Remove <think>...</think> blocks emitted by reasoning models."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+
+def _friendly_source(raw_path: str) -> str:
+    """Convert a raw file path into a human-readable source name."""
+    import os
+    basename = os.path.splitext(os.path.basename(raw_path))[0]
+    return basename.replace("_", " ").title()
 
 
 class Citation(BaseModel):
@@ -56,10 +72,11 @@ def _build_context_block(results: list[Any]) -> str:
     """Format retrieval results into a context block for the LLM prompt."""
     blocks: list[str] = []
     for i, r in enumerate(results, 1):
+        friendly = _friendly_source(r.source)
         section = r.metadata.get("section_header", "")
         header = f" (Section: {section})" if section else ""
         blocks.append(
-            f"[{i}] Source: {r.source}{header}\n{r.content}"
+            f"[{i}] Source: {friendly}{header}\n{r.content}"
         )
     return "\n\n".join(blocks)
 
@@ -146,7 +163,7 @@ class CitationEngine:
         results = self._retriever.retrieve(
             query=question,
             collection=collection,
-            n_results=5,
+            n_results=2,
             max_classification=max_classification,
         )
 
@@ -167,11 +184,12 @@ class CitationEngine:
         system_prompt = _SYSTEM_PROMPT.format(context=context_block)
 
         # Call LLM
-        answer_text = await self._llm.generate(
+        raw_answer = await self._llm.generate(
             prompt=question,
             system_prompt=system_prompt,
             temperature=0.1,
         )
+        answer_text = _strip_think_tokens(raw_answer)
 
         # Parse citations
         citations = _parse_citations(answer_text, results)

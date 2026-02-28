@@ -48,7 +48,13 @@ export function ChatInput() {
           setLocale(detected);
         }
       } catch {
-        setError(tCommon("error"));
+        // The backend LLM may still be processing — the session poller will
+        // pick up the response once it arrives. Show a soft message instead
+        // of a hard error.
+        setMessage("");
+        setError("The response is taking longer than expected. Please wait a moment — it should appear shortly.");
+        // Auto-clear after 10 seconds so the error message fades
+        setTimeout(() => setError(null), 10_000);
       }
     },
     [message, sessionId, locale, createSession, sendMessage, setLocale, tCommon]

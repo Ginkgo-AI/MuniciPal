@@ -34,7 +34,11 @@ class OllamaClient(LLMClient):
             "model": self.config.model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {
+                "temperature": temperature,
+                "num_ctx": 4096,
+                "num_predict": 256,
+            },
         }
         if system_prompt is not None:
             payload["system"] = system_prompt
@@ -52,7 +56,10 @@ class OllamaClient(LLMClient):
             "model": self.config.model,
             "messages": messages,
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {
+                "temperature": temperature,
+                "num_ctx": 4096,
+            },
         }
         resp = await self._post("/api/chat", payload)
         return resp["message"]["content"]
