@@ -12,31 +12,24 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U municipal"]
+      test: [ "CMD-SHELL", "pg_isready -U municipal" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: municipal-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  #  ollama:
+  #    image: ollama/ollama:latest
+  #    container_name: municipal-ollama
+  #    ports:
+  #      - "11434:11434"
+  #    volumes:
+  #      - ollama_data:/root/.ollama
+  #    restart: unless-stopped
+  #    healthcheck:
+  #      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 3
 
   chromadb:
     image: chromadb/chroma:latest
@@ -50,7 +43,7 @@ services:
       - ALLOW_RESET=false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat" ]
       interval: 30s
       timeout: 10s
       retries: 3
