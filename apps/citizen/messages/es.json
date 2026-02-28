@@ -17,9 +17,21 @@
   "chat": {
     "title": "Chatea con Munici-Pal",
     "subtitle": "Pregunta sobre permisos, servicios y más",
-    "placeholder": "Escribe tu pregunta...",
+    "placeholder": "Hazle una pregunta a Munici-Pal...",
     "empty": "Comienza una conversación escribiendo abajo",
-    "sourcesCited": "{count} fuente(s) citada(s)"
+    "sourcesCited": "{count} fuente(s) citada(s)",
+    "disclaimer": "Munici-Pal puede cometer errores. Verifica la información importante usando recursos oficiales de la ciudad.",
+    "welcomeTitle": "Bienvenido a Munici-Pal",
+    "welcomeSubtitle": "Soy tu asistente de IA para la ciudad. Puedo buscar registros oficiales, ayudar a dirigir tickets de servicio y responder preguntas.",
+    "suggestReport": "Reportar un Problema",
+    "suggestReportDesc": "Enviar solicitudes de servicio",
+    "suggestReportPrompt": "Necesito reportar un bache en mi calle.",
+    "suggestPermits": "Permisos y Licencias",
+    "suggestPermitsDesc": "Ayuda con formularios de la ciudad",
+    "suggestPermitsPrompt": "¿Cómo solicito un permiso de construcción?",
+    "suggestExplore": "Explorar la Ciudad",
+    "suggestExploreDesc": "Descubre eventos y lugares locales",
+    "suggestExplorePrompt": "¿Cuáles son los mejores parques para visitar este fin de semana?"
   },
   "intake": {
     "title": "Servicios Municipales",

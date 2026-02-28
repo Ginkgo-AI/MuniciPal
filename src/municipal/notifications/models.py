@@ -4,24 +4,24 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class NotificationChannel(StrEnum):
+class NotificationChannel(str, Enum):
     EMAIL = "email"
     SMS = "sms"
 
 
-class NotificationStatus(StrEnum):
+class NotificationStatus(str, Enum):
     PENDING = "pending"
     DELIVERED = "delivered"
     FAILED = "failed"
 
 
-class NotificationPriority(StrEnum):
+class NotificationPriority(str, Enum):
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"

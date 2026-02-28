@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from municipal.core.types import SessionType
 
 
-class MessageRole(StrEnum):
+class MessageRole(str, Enum):
     """Roles for chat messages."""
 
     USER = "user"

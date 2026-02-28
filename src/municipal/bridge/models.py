@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class Operation(StrEnum):
+class Operation(str, Enum):
     """Standard bridge operations."""
 
     LOOKUP_BY_ID = "lookup_by_id"
@@ -20,7 +20,7 @@ class Operation(StrEnum):
     ADD_NOTE = "add_note"
 
 
-class ConnectionStatus(StrEnum):
+class ConnectionStatus(str, Enum):
     """Adapter connection health status."""
 
     CONNECTED = "connected"

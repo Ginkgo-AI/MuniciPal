@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useCreateSession, useSendMessage } from "@/hooks/use-chat";
 import { useLocaleContext } from "@/i18n/locale-context";
 import { detectLanguage } from "@/lib/detect-language";
+import { SendHorizontal } from "lucide-react";
 
 export function ChatInput() {
   const [message, setMessage] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const t = useTranslations("chat");
   const tCommon = useTranslations("common");
@@ -40,7 +42,6 @@ export function ChatInput() {
         await sendMessage.mutateAsync({ sessionId: sid, message: currentMessage });
         setMessage("");
 
-        // Detect language after successful send to avoid disorienting switch on failure
         const detected = detectLanguage(currentMessage);
         if (detected && detected !== locale) {
           setLocale(detected);
@@ -55,30 +56,50 @@ export function ChatInput() {
   const isLoading = createSession.isPending || sendMessage.isPending;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="border-t border-[var(--border)] p-4 flex flex-col gap-2"
-    >
+    <div className="p-4 bg-gradient-to-t from-background via-background to-transparent z-10 w-full shrink-0">
       {error && (
-        <p className="text-xs text-[var(--destructive)]">{error}</p>
+        <p className="text-xs text-center text-[var(--destructive)] mb-2">{error}</p>
       )}
-      <div className="flex gap-2">
-        <input
-          type="text"
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="max-w-3xl mx-auto flex items-end gap-2 bg-card border border-border/50 shadow-lg rounded-3xl p-2 pl-4 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all duration-200"
+      >
+        <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t("placeholder")}
+          rows={1}
           disabled={isLoading}
-          className="flex-1 rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-1 transition-shadow"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              formRef.current?.requestSubmit();
+            }
+          }}
+          className="flex-1 max-h-32 min-h-[44px] py-3 bg-transparent text-[0.95rem] placeholder:text-muted-foreground focus:outline-none resize-none disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={isLoading || !message.trim()}
-          className="rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] px-5 py-2 text-sm font-medium shadow-md shadow-[var(--primary)]/15 hover:shadow-lg hover:-translate-y-px disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 transition-all duration-200"
+          className="shrink-0 w-[44px] h-[44px] rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 disabled:opacity-50 disabled:scale-100 hover:scale-105 enabled:active:scale-95 transition-all duration-200 shadow-sm disabled:cursor-not-allowed mb-0.5"
         >
-          {isLoading ? "..." : tCommon("send")}
+          {isLoading ? (
+            <div className="w-5 h-5 flex items-center justify-center space-x-1">
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce"></div>
+            </div>
+          ) : (
+            <SendHorizontal className="w-5 h-5 ml-0.5" strokeWidth={2.5} />
+          )}
         </button>
+      </form>
+      <div className="text-center mt-3 mb-1">
+        <p className="text-[11px] text-muted-foreground">
+          {t("disclaimer")}
+        </p>
       </div>
-    </form>
+    </div>
   );
 }

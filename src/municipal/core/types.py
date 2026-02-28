@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class DataClassification(StrEnum):
+class DataClassification(str, Enum):
     """Data classification levels per REFERENCE.md Section 3."""
 
     PUBLIC = "public"
@@ -19,7 +19,7 @@ class DataClassification(StrEnum):
     RESTRICTED = "restricted"
 
 
-class SessionType(StrEnum):
+class SessionType(str, Enum):
     """Resident session types per ROADMAP.md Section 1.3."""
 
     ANONYMOUS = "anonymous"
@@ -27,7 +27,7 @@ class SessionType(StrEnum):
     AUTHENTICATED = "authenticated"
 
 
-class ApprovalStatus(StrEnum):
+class ApprovalStatus(str, Enum):
     """Status of an approval gate request."""
 
     PENDING = "pending"

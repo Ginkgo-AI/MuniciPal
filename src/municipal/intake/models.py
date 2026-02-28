@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from municipal.core.types import DataClassification, SessionType
 
 
-class FieldType(StrEnum):
+class FieldType(str, Enum):
     """Supported field types in wizard steps."""
 
     TEXT = "text"
@@ -27,7 +27,7 @@ class FieldType(StrEnum):
     FILE = "file"
 
 
-class StepStatus(StrEnum):
+class StepStatus(str, Enum):
     """Status of a wizard step."""
 
     PENDING = "pending"

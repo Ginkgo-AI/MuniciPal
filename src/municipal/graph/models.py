@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class EntityType(StrEnum):
+class EntityType(str, Enum):
     PARCEL = "parcel"
     PERSON = "person"
     CASE = "case"
@@ -18,7 +18,7 @@ class EntityType(StrEnum):
     TICKET = "ticket"
 
 
-class RelationshipType(StrEnum):
+class RelationshipType(str, Enum):
     OWNS = "owns"
     SUBMITTED = "submitted"
     ASSIGNED_TO = "assigned_to"

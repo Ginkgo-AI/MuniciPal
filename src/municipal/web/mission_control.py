@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +42,7 @@ def _require_staff(request: Request) -> None:
 # ---------------------------------------------------------------------------
 
 
-class FlagType(StrEnum):
+class FlagType(str, Enum):
     """Types of flags staff can apply to messages."""
 
     INACCURATE = "inaccurate"
