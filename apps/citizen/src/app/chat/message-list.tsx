@@ -51,8 +51,8 @@ export function MessageList() {
       <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto items-center">
         <div className="w-full relative h-[240px] md:h-[280px] rounded-[2rem] overflow-hidden shadow-2xl shadow-indigo-500/10 mb-8 border border-border/50 shrink-0">
           <Image
-            src="/images/hero-city.png"
-            alt="Munici-Pal Cityscape"
+            src="/images/roanoke_hero.png"
+            alt="MuniciPal Cityscape"
             fill
             className="object-cover"
             priority

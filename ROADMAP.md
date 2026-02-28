@@ -1,6 +1,6 @@
-# ROADMAP.md — Munici-Pal
+# ROADMAP.md — MuniciPal
 
-**Munici-Pal** is a secure, sovereign AI orchestration layer designed specifically for municipal government.
+**MuniciPal** is a secure, sovereign AI orchestration layer designed specifically for municipal government.
 It bridges the gap between complex regulations, legacy systems, and resident needs while ensuring staff retain final authority over all legal, regulatory, and financial actions.
 
 This roadmap defines a realistic, compliance-first path from concept → production deployment.
@@ -9,7 +9,7 @@ This roadmap defines a realistic, compliance-first path from concept → product
 
 # 0) Product Vision
 
-Munici-Pal acts as a **trusted digital civic assistant** that:
+MuniciPal acts as a **trusted digital civic assistant** that:
 
 - Helps residents navigate city services
 - Accelerates structured workflows (permits, FOIA, 311)
@@ -99,7 +99,7 @@ Every interaction tied to:
 
 ## 2.1 Self-Hosted LLM ("Local Brain")
 
-Munici-Pal must support **municipality-controlled model hosting**.
+MuniciPal must support **municipality-controlled model hosting**.
 
 ### Supported Modes
 
@@ -595,7 +595,7 @@ Within each phase:
 
 # 11) Procurement Strategy
 
-Munici-Pal:
+MuniciPal:
 
 - Vendor-neutral orchestration layer
 - Does NOT replace systems of record
@@ -604,7 +604,7 @@ Munici-Pal:
 
 ---
 
-# 12) Munici-Pal is NOT
+# 12) MuniciPal is NOT
 
 - A replacement for staff
 - A legal authority

@@ -1,4 +1,4 @@
-# CLAUDE.md — Munici-Pal
+# CLAUDE.md — MuniciPal
 
 Sovereign AI orchestration layer for municipal government: RAG chat assistant, intake wizards, finance engines, staff Mission Control.
 

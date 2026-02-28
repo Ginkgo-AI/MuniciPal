@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Munici-Pal",
+    "appName": "MuniciPal",
     "loading": "Cargando...",
     "error": "Ocurrió un error",
     "send": "Enviar",
@@ -9,19 +9,18 @@
   "home": {
     "badge": "Bienvenido a la Ciudad Estrella",
     "heading": "Roanoke, VA",
-    "brand": "Munici-Pal",
+    "brand": "MuniciPal",
     "description": "Tu asistente moderno con IA para la Ciudad de Roanoke. Obtén ayuda con permisos, solicitudes FOIA, tickets de servicio y explora Blue Ridge.",
     "startChat": "Iniciar una Conversación",
     "browseServices": "Explorar Servicios"
   },
   "chat": {
-    "title": "Chatea con Munici-Pal",
+    "title": "Chatea con MuniciPal",
     "subtitle": "Pregunta sobre permisos, servicios y más",
-    "placeholder": "Hazle una pregunta a Munici-Pal...",
+    "placeholder": "Escribe tu pregunta...",
     "empty": "Comienza una conversación escribiendo abajo",
     "sourcesCited": "{count} fuente(s) citada(s)",
-    "disclaimer": "Munici-Pal puede cometer errores. Verifica la información importante usando recursos oficiales de la ciudad.",
-    "welcome": "Bienvenido a Munici-Pal",
+    "welcome": "Bienvenido a MuniciPal",
     "welcomeDesc": "Soy tu asistente de IA para la ciudad. Puedo buscar registros oficiales, enrutar tickets de servicio y responder preguntas.",
     "services": {
       "reportIssue": "Reportar un Problema",

@@ -1,6 +1,6 @@
-# Munici-Pal
+# MuniciPal
 
-Sovereign AI orchestration layer for municipal government. Munici-Pal bridges the gap between complex regulations, legacy systems, and resident needs — while ensuring staff retain final authority over all legal, regulatory, and financial actions.
+Sovereign AI orchestration layer for municipal government. MuniciPal bridges the gap between complex regulations, legacy systems, and resident needs — while ensuring staff retain final authority over all legal, regulatory, and financial actions.
 
 ## What It Does
 
@@ -149,7 +149,7 @@ MuniciPal/
 
 ## Configuration
 
-Munici-Pal is driven by YAML configuration files in `config/`:
+MuniciPal is driven by YAML configuration files in `config/`:
 
 | File | Purpose |
 |------|---------|

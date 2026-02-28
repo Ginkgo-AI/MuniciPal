@@ -1,4 +1,4 @@
-# REFERENCE.md — Munici-Pal Technical Reference
+# REFERENCE.md — MuniciPal Technical Reference
 
 This document serves as a quick-reference companion to [ROADMAP.md](./ROADMAP.md).
 It defines key terms, architectural components, compliance requirements, and decision records in a format optimized for implementers.
@@ -89,7 +89,7 @@ It defines key terms, architectural components, compliance requirements, and dec
 
 ## 3) Data Classification
 
-All data handled by Munici-Pal must be classified. Classification drives residency rules, caching policy, logging behavior, and access controls.
+All data handled by MuniciPal must be classified. Classification drives residency rules, caching policy, logging behavior, and access controls.
 
 | Level | Label | Examples | Residency | Cache | Logging |
 |-------|-------|----------|-----------|-------|---------|
@@ -149,7 +149,7 @@ interface BridgeAdapter {
 | Requirement | Description |
 |-------------|-------------|
 | Protocol translation | Convert native protocol (SOAP, XML-RPC, proprietary) → JSON |
-| Schema normalization | Map vendor-specific fields to Munici-Pal canonical schema |
+| Schema normalization | Map vendor-specific fields to MuniciPal canonical schema |
 | Classification tagging | Tag all returned data with appropriate classification level |
 | Error handling | Graceful degradation to "contact staff" on failure |
 | Timeout policy | Configurable per-adapter; default 10s |
