@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from municipal.core.types import DataClassification
 
 
-class PaymentStatus(StrEnum):
+class PaymentStatus(str, Enum):
     """Status of a payment transaction."""
 
     PENDING = "pending"

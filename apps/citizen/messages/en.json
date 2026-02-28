@@ -17,9 +17,21 @@
   "chat": {
     "title": "Chat with Munici-Pal",
     "subtitle": "Ask about permits, services, and more",
-    "placeholder": "Type your question...",
+    "placeholder": "Ask Munici-Pal a question...",
     "empty": "Start a conversation by typing below",
-    "sourcesCited": "{count} source(s) cited"
+    "sourcesCited": "{count} source(s) cited",
+    "disclaimer": "Munici-Pal can make mistakes. Check important information using official city resources.",
+    "welcomeTitle": "Welcome to Munici-Pal",
+    "welcomeSubtitle": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
+    "suggestReport": "Report an Issue",
+    "suggestReportDesc": "Submit service requests",
+    "suggestReportPrompt": "I need to report a pothole on my street.",
+    "suggestPermits": "Permits & Licenses",
+    "suggestPermitsDesc": "Get help with city forms",
+    "suggestPermitsPrompt": "How do I apply for a building permit?",
+    "suggestExplore": "Explore the City",
+    "suggestExploreDesc": "Discover local events & places",
+    "suggestExplorePrompt": "What are the best parks to visit this weekend?"
   },
   "intake": {
     "title": "City Services",

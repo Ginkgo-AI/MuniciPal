@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -13,21 +13,21 @@ from municipal.bridge.base import BaseBridgeAdapter
 from municipal.bridge.models import AdapterConfig, NormalizedRequest, NormalizedResponse, Operation
 
 
-class TicketStatus(StrEnum):
+class TicketStatus(str, Enum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
     CLOSED = "closed"
 
 
-class TicketPriority(StrEnum):
+class TicketPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
 
 
-class ServiceCategory(StrEnum):
+class ServiceCategory(str, Enum):
     POTHOLE = "pothole"
     STREETLIGHT = "streetlight"
     TRASH = "trash"
