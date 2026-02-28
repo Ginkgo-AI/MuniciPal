@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
 import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2 } from "lucide-react";
+import { Card, CardContent } from "@municipal/ui";
 
 const GRID_SERVICES = [
   { id: "reportIssue", icon: AlertCircle, prompt: "I need to report an issue." },
@@ -46,33 +47,46 @@ export function MessageList() {
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto items-center">
-        <div className="flex items-center justify-center w-16 h-16 rounded-[20px] bg-indigo-500/10 text-indigo-600 mb-6 mx-auto dark:bg-indigo-500/20 dark:text-indigo-400 shadow-sm border border-indigo-500/10 backdrop-blur-sm">
-          <Sparkles className="w-8 h-8" />
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto items-center">
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white mb-4 shadow-lg shadow-indigo-500/20">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight text-center mb-2 px-4 text-foreground">{t("welcome")}</h2>
+          <p className="text-center text-muted-foreground max-w-lg px-4 text-sm leading-relaxed">
+            {t("welcomeDesc")}
+          </p>
         </div>
-        <h2 className="text-3xl font-semibold tracking-tight text-center mb-3 px-4 text-slate-900 dark:text-slate-100">{t("welcome")}</h2>
-        <p className="text-center text-slate-500 dark:text-slate-400 mb-10 max-w-xl px-4 text-base leading-relaxed">
-          {t("welcomeDesc")}
-        </p>
 
-        {/* Premium CSS Grid Layout */}
-        <div className="w-full px-4 md:px-8 pb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 w-full mx-auto">
+        {/* Apple-style Compact Grid with Shadcn Cards */}
+        <div className="w-full px-2 sm:px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 w-full">
             {GRID_SERVICES.map((action) => (
-              <button
+              <Card
                 key={action.id}
                 onClick={() => handleSuggestedAction(action.prompt)}
-                disabled={createSession.isPending || sendMessage.isPending}
-                className="group flex flex-col items-start p-5 text-left rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+                className="group cursor-pointer hover:border-indigo-500/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-background/60 dark:bg-card/40 border-border/40"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSuggestedAction(action.prompt);
+                  }
+                }}
               >
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-indigo-500 dark:group-hover:text-white shadow-sm border border-black/5 dark:border-white/5">
-                  <action.icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                </div>
-                <h3 className="font-semibold text-[0.95rem] mb-1 line-clamp-1 text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{t(`services.${action.id}`)}</h3>
-                <p className="text-[0.85rem] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-snug">
-                  {action.prompt}
-                </p>
-              </button>
+                <CardContent className="p-4 flex flex-col h-full pointer-events-none">
+                  <div className="flex items-center gap-3 mb-2 w-full">
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-200 shadow-sm border border-border/50">
+                      <action.icon className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-semibold text-[0.85rem] leading-tight text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 break-words">{t(`services.${action.id}`)}</h3>
+                  </div>
+                  <p className="text-[0.7rem] text-muted-foreground leading-snug mt-auto">
+                    {action.prompt}
+                  </p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
