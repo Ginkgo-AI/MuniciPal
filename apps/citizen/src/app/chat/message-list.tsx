@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
-import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2 } from "lucide-react";
 
-const CAROUSEL_SERVICES = [
+const GRID_SERVICES = [
   { id: "reportIssue", icon: AlertCircle, prompt: "I need to report an issue." },
   { id: "permits", icon: FileText, prompt: "I need help with a permit or license." },
   { id: "exploreParks", icon: MapPin, prompt: "Tell me about local parks and recreation." },
@@ -22,51 +22,12 @@ export function MessageList() {
   const createSession = useCreateSession();
   const sendMessage = useSendMessage();
   const t = useTranslations("chat");
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  // Drag to scroll state
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     const handler = (e: Event) => setSessionId((e as CustomEvent).detail);
     window.addEventListener("municipal:session", handler);
     return () => window.removeEventListener("municipal:session", handler);
   }, []);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 320;
-      scrollContainerRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth"
-      });
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollContainerRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-    setScrollLeft(scrollContainerRef.current.scrollLeft);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // scroll-fast multiplier
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-  };
 
   const handleSuggestedAction = async (prompt: string) => {
     let sid = sessionId;
@@ -86,72 +47,35 @@ export function MessageList() {
   if (messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto items-center">
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-600 mb-6 mx-auto dark:bg-indigo-500/20 dark:text-indigo-400">
+        <div className="flex items-center justify-center w-16 h-16 rounded-[20px] bg-indigo-500/10 text-indigo-600 mb-6 mx-auto dark:bg-indigo-500/20 dark:text-indigo-400 shadow-sm border border-indigo-500/10 backdrop-blur-sm">
           <Sparkles className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold text-center mb-2 px-4">{t("welcome")}</h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl px-4">
+        <h2 className="text-3xl font-semibold tracking-tight text-center mb-3 px-4 text-slate-900 dark:text-slate-100">{t("welcome")}</h2>
+        <p className="text-center text-slate-500 dark:text-slate-400 mb-10 max-w-xl px-4 text-base leading-relaxed">
           {t("welcomeDesc")}
         </p>
 
-        {/* CSS Scroll Snapping Carousel */}
-        <div className="w-full relative px-4 md:px-0 group/carousel">
-          {/* Desktop scroll buttons */}
-          <button
-            onClick={() => scroll("left")}
-            className="hidden md:flex absolute -left-4 top-[45%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-background border border-border shadow-md text-foreground opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-accent disabled:opacity-0"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={() => scroll("right")}
-            className="hidden md:flex absolute -right-4 top-[45%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-background border border-border shadow-md text-foreground opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-accent disabled:opacity-0"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          <div
-            ref={scrollContainerRef}
-            onMouseDown={handleMouseDown}
-            onMouseLeave={handleMouseLeave}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 pt-4 hide-scrollbar w-full scroll-smooth ${isDragging ? 'cursor-grabbing snap-none' : 'cursor-grab'}`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {CAROUSEL_SERVICES.map((action) => (
+        {/* Premium CSS Grid Layout */}
+        <div className="w-full px-4 md:px-8 pb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 w-full mx-auto">
+            {GRID_SERVICES.map((action) => (
               <button
                 key={action.id}
                 onClick={() => handleSuggestedAction(action.prompt)}
                 disabled={createSession.isPending || sendMessage.isPending}
-                className="flex-shrink-0 w-64 md:w-72 flex flex-col items-start p-5 text-left border rounded-xl bg-card hover:bg-[var(--accent)] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 active:scale-[0.98] disabled:opacity-50 disabled:scale-100 group snap-center"
+                className="group flex flex-col items-start p-5 text-left rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
               >
-                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors dark:bg-indigo-950 dark:text-indigo-400 dark:group-hover:bg-indigo-600 dark:group-hover:text-white">
-                  <action.icon className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-indigo-500 dark:group-hover:text-white shadow-sm border border-black/5 dark:border-white/5">
+                  <action.icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                 </div>
-                <h3 className="font-semibold text-[0.95rem] mb-1 line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{t(`services.${action.id}`)}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                <h3 className="font-semibold text-[0.95rem] mb-1 line-clamp-1 text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{t(`services.${action.id}`)}</h3>
+                <p className="text-[0.85rem] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-snug">
                   {action.prompt}
                 </p>
               </button>
             ))}
           </div>
-
-          {/* Fading edges block purely for desktop aesthetics */}
-          <div className="hidden md:block absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
-          <div className="hidden md:block absolute top-0 left-0 w-24 h-full bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
         </div>
-
-        {/* Global style to hide scrollbar for webkit */}
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}} />
       </div>
     );
   }
@@ -173,9 +97,9 @@ export function MessageList() {
             )}
 
             <div
-              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-sm ${isUser
+              className={`max-w-[85%] sm:max-w-[75%] rounded-[20px] px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-sm ${isUser
                 ? "bg-indigo-600 text-white rounded-br-sm shadow-md"
-                : "bg-card border border-border text-foreground rounded-bl-sm"
+                : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 text-slate-800 dark:text-slate-200 rounded-bl-sm shadow-sm"
                 }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -183,7 +107,7 @@ export function MessageList() {
               {msg.citations && msg.citations.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-current/10 flex flex-wrap gap-2">
                   {msg.citations.map((cite, idx) => (
-                    <div key={idx} className="inline-flex items-center px-2 py-1 rounded-md bg-background/50 text-[11px] font-medium opacity-90 border border-current/20 backdrop-blur-sm">
+                    <div key={idx} className="inline-flex items-center px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 text-[11px] font-medium opacity-90 border border-current/10 backdrop-blur-sm">
                       <FileText className="w-3 h-3 mr-1.5 opacity-70" />
                       {String(cite.source)}
                     </div>
@@ -193,7 +117,7 @@ export function MessageList() {
             </div>
 
             {isUser && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border border-border shadow-sm hidden sm:flex">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border border-slate-300/50 dark:border-slate-700/50 shadow-sm hidden sm:flex">
                 <User className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               </div>
             )}
