@@ -42,6 +42,7 @@ export function ChatInput() {
         await sendMessage.mutateAsync({ sessionId: sid, message: currentMessage });
         setMessage("");
 
+        // Detect language after successful send to avoid disorienting switch on failure
         const detected = detectLanguage(currentMessage);
         if (detected && detected !== locale) {
           setLocale(detected);
@@ -58,7 +59,7 @@ export function ChatInput() {
   return (
     <div className="p-4 bg-gradient-to-t from-background via-background to-transparent z-10 w-full shrink-0">
       {error && (
-        <p className="text-xs text-center text-[var(--destructive)] mb-2">{error}</p>
+        <p className="text-sm font-medium text-destructive mb-3 text-center bg-destructive/10 py-1.5 rounded-md px-3">{error}</p>
       )}
       <form
         ref={formRef}

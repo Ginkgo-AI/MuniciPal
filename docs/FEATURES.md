@@ -1,8 +1,8 @@
-# Munici-Pal — Features Overview
+# MuniciPal — Features Overview
 
 **Your municipality's AI-powered civic services platform.**
 
-Munici-Pal is a secure, sovereign AI assistant that helps residents navigate city services while giving staff the tools to work faster — without giving up control. It sits alongside your existing systems, not on top of them.
+MuniciPal is a secure, sovereign AI assistant that helps residents navigate city services while giving staff the tools to work faster — without giving up control. It sits alongside your existing systems, not on top of them.
 
 ---
 
@@ -51,7 +51,7 @@ A real-time operational command center where staff can:
 
 ### Human-in-the-Loop Governance
 
-Munici-Pal never makes authoritative decisions on its own. Six approval gates ensure staff sign off on:
+MuniciPal never makes authoritative decisions on its own. Six approval gates ensure staff sign off on:
 
 | Action | Who Approves | Escalation |
 |--------|-------------|------------|
@@ -106,7 +106,7 @@ Core business logic is driven by YAML configuration files that non-developers ca
 
 ### Legacy System Integration
 
-Munici-Pal connects to your existing systems through a bridge adapter layer. Whether your systems speak REST, SOAP/XML, ODBC, or something proprietary, the adapter pattern translates them into a clean internal format. Each adapter includes health checks, timeout policies, and graceful fallback — if a connection fails, the system routes to staff rather than erroring out.
+MuniciPal connects to your existing systems through a bridge adapter layer. Whether your systems speak REST, SOAP/XML, ODBC, or something proprietary, the adapter pattern translates them into a clean internal format. Each adapter includes health checks, timeout policies, and graceful fallback — if a connection fails, the system routes to staff rather than erroring out.
 
 ### Immutable Audit Trail
 
@@ -137,7 +137,7 @@ An internal knowledge graph connects parcels, owners, permits, inspections, cont
 
 ## Deployment Model
 
-Munici-Pal is designed for progressive rollout:
+MuniciPal is designed for progressive rollout:
 
 1. **Internal** — staff-only testing
 2. **Shadow** — runs alongside existing processes, outputs compared but not served
@@ -149,7 +149,7 @@ Each stage has clear promotion criteria before advancing, so your team stays com
 
 ---
 
-## What Munici-Pal is NOT
+## What MuniciPal is NOT
 
 - **Not a replacement for staff** — it's a tool that makes staff faster and more effective
 - **Not a legal authority** — all authoritative decisions require human approval

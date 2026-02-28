@@ -1,6 +1,6 @@
-# Munici-Pal — IT Technical Reference
+# MuniciPal — IT Technical Reference
 
-This document is intended for IT officers evaluating Munici-Pal for deployment in a municipal environment. It covers architecture, infrastructure requirements, security posture, integration patterns, and operational procedures.
+This document is intended for IT officers evaluating MuniciPal for deployment in a municipal environment. It covers architecture, infrastructure requirements, security posture, integration patterns, and operational procedures.
 
 ---
 
@@ -21,7 +21,7 @@ This document is intended for IT officers evaluating Munici-Pal for deployment i
 
 ## 1. System Architecture
 
-Munici-Pal is a three-tier application consisting of a Next.js frontend, a Python/FastAPI backend, and a data layer comprising PostgreSQL, ChromaDB, and a self-hosted LLM runtime.
+MuniciPal is a three-tier application consisting of a Next.js frontend, a Python/FastAPI backend, and a data layer comprising PostgreSQL, ChromaDB, and a self-hosted LLM runtime.
 
 ```
                        ┌──────────────┐   ┌──────────────┐

@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-2">Staff Login</h1>
         <p className="text-sm text-center text-[var(--muted-foreground)] mb-6">
-          Munici-Pal Mission Control
+          MuniciPal Mission Control
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Munici-Pal",
+    "appName": "MuniciPal",
     "loading": "Loading...",
     "error": "An error occurred",
     "send": "Send",
@@ -9,29 +9,30 @@
   "home": {
     "badge": "Welcome to the Star City",
     "heading": "Roanoke, VA",
-    "brand": "Munici-Pal",
+    "brand": "MuniciPal",
     "description": "Your modern AI-powered assistant for the City of Roanoke. Get help with permits, FOIA requests, service tickets, and explore the Blue Ridge.",
     "startChat": "Start a Conversation",
     "browseServices": "Browse City Services"
   },
   "chat": {
-    "title": "Chat with Munici-Pal",
+    "title": "Chat with MuniciPal",
     "subtitle": "Ask about permits, services, and more",
-    "placeholder": "Ask Munici-Pal a question...",
+    "placeholder": "Type your question...",
     "empty": "Start a conversation by typing below",
     "sourcesCited": "{count} source(s) cited",
-    "disclaimer": "Munici-Pal can make mistakes. Check important information using official city resources.",
-    "welcomeTitle": "Welcome to Munici-Pal",
-    "welcomeSubtitle": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
-    "suggestReport": "Report an Issue",
-    "suggestReportDesc": "Submit service requests",
-    "suggestReportPrompt": "I need to report a pothole on my street.",
-    "suggestPermits": "Permits & Licenses",
-    "suggestPermitsDesc": "Get help with city forms",
-    "suggestPermitsPrompt": "How do I apply for a building permit?",
-    "suggestExplore": "Explore the City",
-    "suggestExploreDesc": "Discover local events & places",
-    "suggestExplorePrompt": "What are the best parks to visit this weekend?"
+    "disclaimer": "MuniciPal can make mistakes. Check important information using official city resources.",
+    "welcome": "Welcome to MuniciPal",
+    "welcomeDesc": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
+    "services": {
+      "reportIssue": "Report an Issue",
+      "permits": "Permits & Licenses",
+      "exploreParks": "Parks & Recreation",
+      "payBill": "Pay Utility Bill",
+      "publicRecords": "Public Records (FOIA)",
+      "voting": "Register to Vote",
+      "cityCouncil": "City Council",
+      "library": "Library Services"
+    }
   },
   "intake": {
     "title": "City Services",

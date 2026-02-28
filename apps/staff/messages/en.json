@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Munici-Pal",
+    "appName": "MuniciPal",
     "loading": "Loading...",
     "error": "An error occurred",
     "send": "Send",
@@ -27,7 +27,7 @@
   "home": {
     "badge": "Staff Dashboard",
     "title": "Mission Control",
-    "subtitle": "Manage operations, monitor sessions, and configure rules for Munici-Pal AI assistants.",
+    "subtitle": "Manage operations, monitor sessions, and configure rules for MuniciPal AI assistants.",
     "openDashboard": "Open Dashboard",
     "viewSessions": "View Sessions"
   }

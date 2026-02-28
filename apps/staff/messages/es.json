@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Munici-Pal",
+    "appName": "MuniciPal",
     "loading": "Cargando...",
     "error": "Ocurrió un error",
     "send": "Enviar",
@@ -27,7 +27,7 @@
   "home": {
     "badge": "Panel de Empleados",
     "title": "Centro de Mando",
-    "subtitle": "Gestiona operaciones, monitorea sesiones y configura reglas para los asistentes de IA de Munici-Pal.",
+    "subtitle": "Gestiona operaciones, monitorea sesiones y configura reglas para los asistentes de IA de MuniciPal.",
     "openDashboard": "Abrir Panel",
     "viewSessions": "Ver Sesiones"
   }

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Munici-Pal",
+    "appName": "MuniciPal",
     "loading": "Cargando...",
     "error": "Ocurrió un error",
     "send": "Enviar",
@@ -9,29 +9,30 @@
   "home": {
     "badge": "Bienvenido a la Ciudad Estrella",
     "heading": "Roanoke, VA",
-    "brand": "Munici-Pal",
+    "brand": "MuniciPal",
     "description": "Tu asistente moderno con IA para la Ciudad de Roanoke. Obtén ayuda con permisos, solicitudes FOIA, tickets de servicio y explora Blue Ridge.",
     "startChat": "Iniciar una Conversación",
     "browseServices": "Explorar Servicios"
   },
   "chat": {
-    "title": "Chatea con Munici-Pal",
+    "title": "Chatea con MuniciPal",
     "subtitle": "Pregunta sobre permisos, servicios y más",
-    "placeholder": "Hazle una pregunta a Munici-Pal...",
+    "placeholder": "Escribe tu pregunta...",
     "empty": "Comienza una conversación escribiendo abajo",
     "sourcesCited": "{count} fuente(s) citada(s)",
-    "disclaimer": "Munici-Pal puede cometer errores. Verifica la información importante usando recursos oficiales de la ciudad.",
-    "welcomeTitle": "Bienvenido a Munici-Pal",
-    "welcomeSubtitle": "Soy tu asistente de IA para la ciudad. Puedo buscar registros oficiales, ayudar a dirigir tickets de servicio y responder preguntas.",
-    "suggestReport": "Reportar un Problema",
-    "suggestReportDesc": "Enviar solicitudes de servicio",
-    "suggestReportPrompt": "Necesito reportar un bache en mi calle.",
-    "suggestPermits": "Permisos y Licencias",
-    "suggestPermitsDesc": "Ayuda con formularios de la ciudad",
-    "suggestPermitsPrompt": "¿Cómo solicito un permiso de construcción?",
-    "suggestExplore": "Explorar la Ciudad",
-    "suggestExploreDesc": "Descubre eventos y lugares locales",
-    "suggestExplorePrompt": "¿Cuáles son los mejores parques para visitar este fin de semana?"
+    "disclaimer": "MuniciPal puede cometer errores. Verifica la información importante usando recursos oficiales de la ciudad.",
+    "welcome": "Bienvenido a MuniciPal",
+    "welcomeDesc": "Soy tu asistente de IA para la ciudad. Puedo buscar registros oficiales, enrutar tickets de servicio y responder preguntas.",
+    "services": {
+      "reportIssue": "Reportar un Problema",
+      "permits": "Permisos y Licencias",
+      "exploreParks": "Parques y Recreación",
+      "payBill": "Pagar Servicios",
+      "publicRecords": "Registros FOIA",
+      "voting": "Registro para Votar",
+      "cityCouncil": "Consejo Municipal",
+      "library": "Biblioteca"
+    }
   },
   "intake": {
     "title": "Servicios Municipales",
