@@ -4,18 +4,18 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
-import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2 } from "lucide-react";
+import { Sparkles, FileText, User, Building2 } from "lucide-react";
 import { Card, CardContent } from "@municipal/ui";
 
 const GRID_SERVICES = [
-  { id: "reportIssue", icon: AlertCircle, prompt: "I need to report an issue." },
-  { id: "permits", icon: FileText, prompt: "I need help with a permit or license." },
-  { id: "exploreParks", icon: MapPin, prompt: "Tell me about local parks and recreation." },
-  { id: "payBill", icon: CreditCard, prompt: "How do I pay my utility bill?" },
-  { id: "publicRecords", icon: Archive, prompt: "I want to submit a FOIA public records request." },
-  { id: "voting", icon: CheckSquare, prompt: "How do I register to vote?" },
-  { id: "cityCouncil", icon: Users, prompt: "When is the next city council meeting?" },
-  { id: "library", icon: BookOpen, prompt: "What are the library hours and services?" },
+  { id: "reportIssue", imgSrc: "/images/icon_report_issue.png", prompt: "I need to report an issue." },
+  { id: "permits", imgSrc: "/images/icon_permits.png", prompt: "I need help with a permit or license." },
+  { id: "exploreParks", imgSrc: "/images/icon_explore_parks.png", prompt: "Tell me about local parks and recreation." },
+  { id: "payBill", imgSrc: "/images/icon_pay_bill.png", prompt: "How do I pay my utility bill?" },
+  { id: "publicRecords", imgSrc: "/images/icon_public_records.png", prompt: "I want to submit a FOIA public records request." },
+  { id: "voting", imgSrc: "/images/icon_voting.png", prompt: "How do I register to vote?" },
+  { id: "cityCouncil", imgSrc: "/images/icon_city_council.png", prompt: "When is the next city council meeting?" },
+  { id: "library", imgSrc: "/images/icon_library.png", prompt: "What are the library hours and services?" },
 ] as const;
 
 export function MessageList() {
@@ -77,7 +77,7 @@ export function MessageList() {
           </div>
         </div>
 
-        {/* Apple-style Compact Grid with Shadcn Cards */}
+        {/* Apple-style Compact Grid with Shadcn Cards and 3D Assets */}
         <div className="w-full px-2 sm:px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 w-full">
             {GRID_SERVICES.map((action) => (
@@ -96,8 +96,13 @@ export function MessageList() {
               >
                 <CardContent className="p-4 flex flex-col h-full pointer-events-none">
                   <div className="flex items-center gap-3 mb-2 w-full">
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-200 shadow-sm border border-border/50">
-                      <action.icon className="w-4 h-4" />
+                    <div className="w-10 h-10 relative flex-shrink-0 rounded-xl overflow-hidden shadow-sm border border-border/50 group-hover:shadow-md transition-all duration-200 bg-white">
+                      <Image
+                        src={action.imgSrc}
+                        alt={t(`services.${action.id}`)}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
                     <h3 className="font-semibold text-[0.85rem] leading-tight text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 break-words">{t(`services.${action.id}`)}</h3>
                   </div>
