@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
-import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2 } from "lucide-react";
+import { Sparkles, AlertCircle, FileText, MapPin, CreditCard, Archive, CheckSquare, Users, BookOpen, User, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 
 const CAROUSEL_SERVICES = [
   { id: "reportIssue", icon: AlertCircle, prompt: "I need to report an issue." },
@@ -22,12 +22,51 @@ export function MessageList() {
   const createSession = useCreateSession();
   const sendMessage = useSendMessage();
   const t = useTranslations("chat");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Drag to scroll state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     const handler = (e: Event) => setSessionId((e as CustomEvent).detail);
     window.addEventListener("municipal:session", handler);
     return () => window.removeEventListener("municipal:session", handler);
   }, []);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 320;
+      scrollContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // scroll-fast multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   const handleSuggestedAction = async (prompt: string) => {
     let sid = sessionId;
@@ -56,8 +95,33 @@ export function MessageList() {
         </p>
 
         {/* CSS Scroll Snapping Carousel */}
-        <div className="w-full relative px-4 md:px-0">
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 pt-4 hide-scrollbar w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="w-full relative px-4 md:px-0 group/carousel">
+          {/* Desktop scroll buttons */}
+          <button
+            onClick={() => scroll("left")}
+            className="hidden md:flex absolute -left-4 top-[45%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-background border border-border shadow-md text-foreground opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-accent disabled:opacity-0"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => scroll("right")}
+            className="hidden md:flex absolute -right-4 top-[45%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-background border border-border shadow-md text-foreground opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-accent disabled:opacity-0"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <div
+            ref={scrollContainerRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 pt-4 hide-scrollbar w-full scroll-smooth ${isDragging ? 'cursor-grabbing snap-none' : 'cursor-grab'}`}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {CAROUSEL_SERVICES.map((action) => (
               <button
                 key={action.id}
@@ -110,8 +174,8 @@ export function MessageList() {
 
             <div
               className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-sm ${isUser
-                  ? "bg-indigo-600 text-white rounded-br-sm shadow-md"
-                  : "bg-card border border-border text-foreground rounded-bl-sm"
+                ? "bg-indigo-600 text-white rounded-br-sm shadow-md"
+                : "bg-card border border-border text-foreground rounded-bl-sm"
                 }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
