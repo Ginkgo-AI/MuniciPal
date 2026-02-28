@@ -21,17 +21,18 @@
     "empty": "Start a conversation by typing below",
     "sourcesCited": "{count} source(s) cited",
     "disclaimer": "Munici-Pal can make mistakes. Check important information using official city resources.",
-    "welcomeTitle": "Welcome to Munici-Pal",
-    "welcomeSubtitle": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
-    "suggestReport": "Report an Issue",
-    "suggestReportDesc": "Submit service requests",
-    "suggestReportPrompt": "I need to report a pothole on my street.",
-    "suggestPermits": "Permits & Licenses",
-    "suggestPermitsDesc": "Get help with city forms",
-    "suggestPermitsPrompt": "How do I apply for a building permit?",
-    "suggestExplore": "Explore the City",
-    "suggestExploreDesc": "Discover local events & places",
-    "suggestExplorePrompt": "What are the best parks to visit this weekend?"
+    "welcome": "Welcome to Munici-Pal",
+    "welcomeDesc": "I'm your AI assistant for the city. I can search official records, help route service tickets, and answer questions.",
+    "services": {
+      "reportIssue": "Report an Issue",
+      "permits": "Permits & Licenses",
+      "exploreParks": "Parks & Recreation",
+      "payBill": "Pay Utility Bill",
+      "publicRecords": "Public Records (FOIA)",
+      "voting": "Register to Vote",
+      "cityCouncil": "City Council",
+      "library": "Library Services"
+    }
   },
   "intake": {
     "title": "City Services",
