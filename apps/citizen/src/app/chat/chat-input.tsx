@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useCreateSession, useSendMessage } from "@/hooks/use-chat";
+import { useCreateSession } from "@/hooks/use-chat";
+import { useStreamMessage } from "@/hooks/use-stream-message";
 import { useLocaleContext } from "@/i18n/locale-context";
 import { detectLanguage } from "@/lib/detect-language";
 import { SendHorizontal } from "lucide-react";
@@ -18,7 +19,7 @@ export function ChatInput() {
   const { locale, setLocale } = useLocaleContext();
 
   const createSession = useCreateSession();
-  const sendMessage = useSendMessage();
+  const { streaming, streamMessage } = useStreamMessage();
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -39,28 +40,39 @@ export function ChatInput() {
           );
         }
 
-        await sendMessage.mutateAsync({ sessionId: sid, message: currentMessage });
+        // Dispatch the user message immediately for the message list
+        window.dispatchEvent(
+          new CustomEvent("municipal:user-message", { detail: currentMessage })
+        );
+
         setMessage("");
 
-        // Detect language after successful send to avoid disorienting switch on failure
+        // Stream the response
+        await streamMessage({ sessionId: sid, message: currentMessage });
+
+        // Detect language after successful send
         const detected = detectLanguage(currentMessage);
         if (detected && detected !== locale) {
           setLocale(detected);
         }
       } catch {
-        // The backend LLM may still be processing — the session poller will
-        // pick up the response once it arrives. Show a soft message instead
-        // of a hard error.
         setMessage("");
         setError("The response is taking longer than expected. Please wait a moment — it should appear shortly.");
-        // Auto-clear after 10 seconds so the error message fades
         setTimeout(() => setError(null), 10_000);
       }
     },
-    [message, sessionId, locale, createSession, sendMessage, setLocale, tCommon]
+    [message, sessionId, locale, createSession, streamMessage, setLocale, tCommon]
   );
 
-  const isLoading = createSession.isPending || sendMessage.isPending;
+  // Dispatch streaming state to message list via a custom event
+  // (we use window events to communicate between sibling components)
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("municipal:streaming", { detail: streaming })
+    );
+  }, [streaming]);
+
+  const isLoading = createSession.isPending || streaming.isStreaming;
 
   return (
     <div className="p-4 bg-gradient-to-t from-background via-background to-transparent z-10 w-full shrink-0">
@@ -110,3 +122,4 @@ export function ChatInput() {
     </div>
   );
 }
+

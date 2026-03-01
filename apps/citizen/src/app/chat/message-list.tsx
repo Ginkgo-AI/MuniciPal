@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useSession, useCreateSession, useSendMessage } from "@/hooks/use-chat";
 import { Sparkles, FileText, User, Building2 } from "lucide-react";
 import { Card, CardContent, cn } from "@municipal/ui";
+
+interface StreamingState {
+  isStreaming: boolean;
+  content: string;
+  citations: Array<Record<string, unknown>>;
+  confidence: number | null;
+  low_confidence: boolean | null;
+}
 
 const GRID_SERVICES = [
   { id: "reportIssue", imgSrc: "/images/icon_report_issue.png", prompt: "I need to report an issue." },
@@ -21,11 +29,14 @@ const GRID_SERVICES = [
 export function MessageList() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [streamingState, setStreamingState] = useState<StreamingState | null>(null);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const { data: session } = useSession(sessionId);
   const createSession = useCreateSession();
   const sendMessage = useSendMessage();
   const t = useTranslations("chat");
   const tCommon = useTranslations("common");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isLoading = createSession.isPending || sendMessage.isPending;
 
@@ -34,6 +45,34 @@ export function MessageList() {
     window.addEventListener("municipal:session", handler);
     return () => window.removeEventListener("municipal:session", handler);
   }, []);
+
+  // Listen for streaming updates from ChatInput
+  useEffect(() => {
+    const handleStreaming = (e: Event) => {
+      const detail = (e as CustomEvent).detail as StreamingState;
+      setStreamingState(detail);
+      if (!detail.isStreaming && !detail.content) {
+        // Stream ended and session poll will pick up the message
+        setPendingUserMessage(null);
+      }
+    };
+    const handleUserMessage = (e: Event) => {
+      setPendingUserMessage((e as CustomEvent).detail as string);
+    };
+    window.addEventListener("municipal:streaming", handleStreaming);
+    window.addEventListener("municipal:user-message", handleUserMessage);
+    return () => {
+      window.removeEventListener("municipal:streaming", handleStreaming);
+      window.removeEventListener("municipal:user-message", handleUserMessage);
+    };
+  }, []);
+
+  // Auto-scroll when streaming content updates
+  useEffect(() => {
+    if (streamingState?.isStreaming || streamingState?.content) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [streamingState?.content, streamingState?.isStreaming]);
 
   const handleSuggestedAction = async (prompt: string) => {
     setError(null);
@@ -56,7 +95,18 @@ export function MessageList() {
 
   const messages = session?.messages ?? [];
 
-  if (messages.length === 0) {
+  // Clear pending user message once the session includes it
+  useEffect(() => {
+    if (pendingUserMessage && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === "assistant" || (lastMsg?.role === "user" && lastMsg.content === pendingUserMessage)) {
+        setPendingUserMessage(null);
+        setStreamingState(null);
+      }
+    }
+  }, [messages, pendingUserMessage]);
+
+  if (messages.length === 0 && !pendingUserMessage) {
     return (
       <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center w-full animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto items-center">
         {error && (
@@ -135,6 +185,11 @@ export function MessageList() {
     );
   }
 
+  // Determine if we should show a streaming bubble
+  const showStreamingBubble = streamingState && (streamingState.isStreaming || streamingState.content) && !messages.some(
+    (m) => m.role === "assistant" && m.content === streamingState.content
+  );
+
   return (
     <div className="flex-[1_1_0%] overflow-y-auto p-4 md:p-6 space-y-6">
       {messages.map((msg, i) => {
@@ -179,6 +234,70 @@ export function MessageList() {
           </div>
         );
       })}
+
+      {/* Show pending user message while streaming */}
+      {pendingUserMessage && !messages.some((m) => m.role === "user" && m.content === pendingUserMessage) && (
+        <div className="flex items-end gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 justify-end">
+          <div className="max-w-[85%] sm:max-w-[75%] rounded-[20px] px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-md bg-primary text-primary-foreground rounded-br-sm">
+            <p className="whitespace-pre-wrap">{pendingUserMessage}</p>
+          </div>
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center border border-border shadow-sm hidden sm:flex">
+            <User className="w-4 h-4 text-secondary-foreground" />
+          </div>
+        </div>
+      )}
+
+      {/* Streaming assistant message */}
+      {showStreamingBubble && (
+        <div className="flex items-end gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 justify-start">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm hidden sm:flex">
+            <Building2 className="w-4 h-4 text-primary" />
+          </div>
+          <div className="max-w-[85%] sm:max-w-[75%] rounded-[20px] px-5 py-3.5 text-[0.95rem] leading-relaxed shadow-sm bg-card/80 backdrop-blur-md border border-border/50 text-foreground rounded-bl-sm">
+            <p className="whitespace-pre-wrap">
+              {streamingState.content}
+              {streamingState.isStreaming && (
+                <span className="inline-block w-2 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
+              )}
+            </p>
+
+            {/* Show citations once streaming is complete */}
+            {!streamingState.isStreaming && streamingState.citations.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-current/10 flex flex-wrap gap-2 animate-in fade-in duration-500">
+                {streamingState.citations.map((cite, idx) => (
+                  <div key={idx} className="inline-flex items-center px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 text-[11px] font-medium opacity-90 border border-current/10 backdrop-blur-sm">
+                    <FileText className="w-3 h-3 mr-1.5 opacity-70" />
+                    {String(cite.source)}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Show confidence once streaming is complete */}
+            {!streamingState.isStreaming && streamingState.confidence !== null && (
+              <div className="mt-2 animate-in fade-in duration-500">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${streamingState.confidence >= 0.7
+                          ? "bg-green-500"
+                          : streamingState.confidence >= 0.5
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                      style={{ width: `${Math.round(streamingState.confidence * 100)}%` }}
+                    />
+                  </div>
+                  <span>{Math.round(streamingState.confidence * 100)}% confidence</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div ref={messagesEndRef} />
     </div>
   );
 }
+
