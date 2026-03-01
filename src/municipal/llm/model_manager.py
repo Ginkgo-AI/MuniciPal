@@ -210,7 +210,7 @@ class ModelManager:
                     name=m.get("name", ""),
                     size_bytes=m.get("size", 0),
                     size_vram=m.get("size_vram", 0),
-                    context_length=m.get("details", {}).get("num_ctx", 0),
+                    context_length=m.get("context_length", 0),
                     expires_at=m.get("expires_at", ""),
                 )
             )
