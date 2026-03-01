@@ -293,14 +293,28 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
                                 {loaded.map((m) => (
                                     <div
                                         key={m.name}
-                                        className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm"
+                                        className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm group"
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400 shrink-0" />
                                             <span className="font-medium truncate">{m.name}</span>
                                         </div>
-                                        <div className="text-[10px] text-[var(--muted-foreground)] shrink-0 ml-2">
-                                            {m.size_gb} GB · ctx {m.context_length}
+                                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                                            <span className="text-[10px] text-[var(--muted-foreground)]">
+                                                {m.size_gb} GB · ctx {m.context_length}
+                                            </span>
+                                            <button
+                                                onClick={() => handleUnloadModel(m.name)}
+                                                disabled={unloadModel.isPending}
+                                                className="w-6 h-6 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
+                                                title={`Unload ${m.name}`}
+                                            >
+                                                {unloadModel.isPending ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <X className="w-3.5 h-3.5" />
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
