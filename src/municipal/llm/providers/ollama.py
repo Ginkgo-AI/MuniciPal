@@ -36,10 +36,11 @@ class OllamaClient(LLMClient):
             "model": self.config.model,
             "prompt": prompt,
             "stream": False,
+            "keep_alive": self.config.keep_alive,
             "options": {
                 "temperature": temperature,
-                "num_ctx": 4096,
-                "num_predict": 256,
+                "num_ctx": self.config.context_length,
+                "num_predict": self.config.max_tokens,
             },
         }
         if system_prompt is not None:
@@ -60,10 +61,11 @@ class OllamaClient(LLMClient):
             "model": self.config.model,
             "prompt": prompt,
             "stream": True,
+            "keep_alive": self.config.keep_alive,
             "options": {
                 "temperature": temperature,
-                "num_ctx": 4096,
-                "num_predict": 256,
+                "num_ctx": self.config.context_length,
+                "num_predict": self.config.max_tokens,
             },
         }
         if system_prompt is not None:
@@ -96,9 +98,10 @@ class OllamaClient(LLMClient):
             "model": self.config.model,
             "messages": messages,
             "stream": False,
+            "keep_alive": self.config.keep_alive,
             "options": {
                 "temperature": temperature,
-                "num_ctx": 4096,
+                "num_ctx": self.config.context_length,
             },
         }
         resp = await self._post("/api/chat", payload)

@@ -19,6 +19,8 @@ class LLMConfig(BaseSettings):
     api_key: str | None = None
     max_tokens: int = 2048
     top_p: float | None = None
+    context_length: int = 4096
+    keep_alive: str = "5m"
 
 
 class VectorDBConfig(BaseSettings):

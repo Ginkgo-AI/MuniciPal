@@ -43,6 +43,7 @@ class ChatSession(BaseModel):
 
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_type: SessionType = SessionType.ANONYMOUS
+    title: str | None = None
     messages: list[ChatMessage] = Field(default_factory=list)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
@@ -116,3 +117,46 @@ class SessionManager:
             key=lambda s: s.last_active,
             reverse=True,
         )
+
+    def rename_session(self, session_id: str, title: str) -> ChatSession:
+        """Rename a session.
+
+        Args:
+            session_id: The UUID of the session.
+            title: The new title.
+
+        Returns:
+            The updated ChatSession.
+
+        Raises:
+            KeyError: If the session does not exist.
+        """
+        session = self._sessions.get(session_id)
+        if session is None:
+            raise KeyError(f"Session {session_id!r} not found")
+        session.title = title
+        return session
+
+    def delete_session(self, session_id: str) -> None:
+        """Delete a session.
+
+        Args:
+            session_id: The UUID of the session to delete.
+
+        Raises:
+            KeyError: If the session does not exist.
+        """
+        if session_id not in self._sessions:
+            raise KeyError(f"Session {session_id!r} not found")
+        del self._sessions[session_id]
+
+    def set_title(self, session_id: str, title: str) -> None:
+        """Set the title for a session (only if not already titled).
+
+        Args:
+            session_id: The UUID of the session.
+            title: The title to set.
+        """
+        session = self._sessions.get(session_id)
+        if session is not None and session.title is None:
+            session.title = title[:50]

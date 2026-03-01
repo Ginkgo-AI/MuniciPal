@@ -48,6 +48,7 @@ from municipal.finance.deadlines import DeadlineEngine
 from municipal.finance.fees import FeeEngine
 from municipal.finance.taxes import TaxEngine
 from municipal.llm.registry import ModelRegistry
+from municipal.llm.model_manager import ModelManager
 from municipal.web.finance_router import PaymentStore
 from municipal.web.finance_router import router as finance_router
 from municipal.web.mission_control import (
@@ -103,9 +104,44 @@ class SessionInfo(BaseModel):
 
     session_id: str
     session_type: str
+    title: str | None = None
     created_at: str
     last_active: str
     message_count: int
+
+
+class SessionDetail(SessionInfo):
+    """Session detail including message history."""
+
+    messages: list[dict[str, Any]]
+
+
+class SessionRenameRequest(BaseModel):
+    """Request body for renaming a session."""
+
+    title: str
+
+
+class ModelLoadRequest(BaseModel):
+    """Request body for loading a model."""
+
+    model: str
+    keep_alive: str = "-1"
+    num_ctx: int | None = None
+
+
+class ModelUnloadRequest(BaseModel):
+    """Request body for unloading a model."""
+
+    model: str
+
+
+class ModelConfigRequest(BaseModel):
+    """Request body for updating model config."""
+
+    model: str | None = None
+    context_length: int | None = None
+    keep_alive: str | None = None
 
 
 class SessionDetail(SessionInfo):
@@ -312,9 +348,10 @@ def create_app(
     deadline_engine = DeadlineEngine()
     payment_store = pg_stores.get("payment_store") or PaymentStore()
 
-    # Phase 5: Model registry + LLM latency tracker
+    # Phase 5: Model registry + LLM latency tracker + model manager
     model_registry = ModelRegistry(production=settings.llm)
     llm_tracker = LLMLatencyTracker()
+    model_manager = ModelManager(settings.llm)
 
     # Store on app state for access in route handlers
     app.state.chat_service = chat_service
@@ -356,6 +393,8 @@ def create_app(
     app.state.payment_store = payment_store
     app.state.model_registry = model_registry
     app.state.llm_tracker = llm_tracker
+    app.state.model_manager = model_manager
+    app.state.settings = settings
 
     # Store DB manager for lifespan cleanup
     if db_manager is not None:
@@ -415,7 +454,10 @@ def create_app(
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(body: ChatRequest) -> ChatResponse:
-        """Process a chat message and return the assistant response."""
+        """Process a chat message and return the assistant response.
+
+        Also auto-sets the session title from the first user message.
+        """
         try:
             msg = await chat_service.respond(
                 session_id=body.session_id,
@@ -432,6 +474,13 @@ def create_app(
                 status_code=500,
                 detail="An internal error occurred. Please try again or contact staff.",
             )
+
+        # Auto-set title from first user message
+        from municipal.repositories import resolve
+        try:
+            await resolve(session_manager.set_title(body.session_id, body.message))
+        except Exception:
+            pass  # Non-critical
 
         return ChatResponse(
             response=msg.content,
@@ -537,6 +586,7 @@ def create_app(
         return SessionInfo(
             session_id=session.session_id,
             session_type=session.session_type.value,
+            title=session.title,
             created_at=session.created_at.isoformat(),
             last_active=session.last_active.isoformat(),
             message_count=0,
@@ -569,6 +619,7 @@ def create_app(
         return SessionDetail(
             session_id=session.session_id,
             session_type=session.session_type.value,
+            title=session.title,
             created_at=session.created_at.isoformat(),
             last_active=session.last_active.isoformat(),
             message_count=len(session.messages),
@@ -585,12 +636,105 @@ def create_app(
             SessionInfo(
                 session_id=s.session_id,
                 session_type=s.session_type.value,
+                title=s.title,
                 created_at=s.created_at.isoformat(),
                 last_active=s.last_active.isoformat(),
                 message_count=len(s.messages),
             )
             for s in sessions
         ]
+
+    @app.patch("/api/sessions/{session_id}")
+    async def rename_session(session_id: str, body: SessionRenameRequest) -> dict[str, Any]:
+        """Rename a chat session."""
+        from municipal.repositories import resolve
+
+        try:
+            session = await resolve(session_manager.rename_session(session_id, body.title))
+        except KeyError:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Session {session_id!r} not found",
+            )
+        return {
+            "session_id": session.session_id,
+            "title": session.title,
+        }
+
+    @app.delete("/api/sessions/{session_id}")
+    async def delete_session_endpoint(session_id: str) -> dict[str, str]:
+        """Delete a chat session."""
+        from municipal.repositories import resolve
+
+        try:
+            await resolve(session_manager.delete_session(session_id))
+        except KeyError:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Session {session_id!r} not found",
+            )
+        return {"status": "deleted", "session_id": session_id}
+
+    # --- Model Management Endpoints ---
+
+    @app.get("/api/models/available")
+    async def list_available_models() -> dict[str, Any]:
+        """List all models available from the Ollama backend."""
+        models = await model_manager.list_available()
+        return {"models": [m.to_dict() for m in models]}
+
+    @app.get("/api/models/loaded")
+    async def list_loaded_models() -> dict[str, Any]:
+        """List models currently loaded in memory."""
+        loaded = await model_manager.list_loaded()
+        return {"models": [m.to_dict() for m in loaded]}
+
+    @app.post("/api/models/load")
+    async def load_model(body: ModelLoadRequest) -> dict[str, Any]:
+        """Load a model into memory."""
+        result = await model_manager.load_model(
+            name=body.model,
+            keep_alive=body.keep_alive,
+            num_ctx=body.num_ctx,
+        )
+        return result
+
+    @app.post("/api/models/unload")
+    async def unload_model(body: ModelUnloadRequest) -> dict[str, Any]:
+        """Unload a model from memory."""
+        result = await model_manager.unload_model(name=body.model)
+        return result
+
+    @app.patch("/api/models/config")
+    async def update_model_config(body: ModelConfigRequest) -> dict[str, Any]:
+        """Update the active model configuration."""
+        current = settings.llm
+        updates: dict[str, Any] = {}
+        if body.model is not None:
+            current.model = body.model
+            updates["model"] = body.model
+        if body.context_length is not None:
+            current.context_length = body.context_length
+            updates["context_length"] = body.context_length
+        if body.keep_alive is not None:
+            current.keep_alive = body.keep_alive
+            updates["keep_alive"] = body.keep_alive
+        return {"status": "updated", "config": updates}
+
+    @app.get("/api/system/resources")
+    async def system_resources() -> dict[str, Any]:
+        """Return system resource information."""
+        resources = ModelManager.get_system_resources()
+        return resources.to_dict()
+
+    @app.get("/api/models/recommended")
+    async def recommended_models() -> dict[str, Any]:
+        """Return model recommendations based on system resources."""
+        recs = await model_manager.recommend_models()
+        return {
+            "recommendations": [r.to_dict() for r in recs],
+            "system": ModelManager.get_system_resources().to_dict(),
+        }
 
     @app.get("/api/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
