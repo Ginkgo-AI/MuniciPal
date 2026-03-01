@@ -254,33 +254,58 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
                             </div>
                         )}
 
-                        {/* Load / Unload */}
-                        <div className="flex gap-2 mt-2">
-                            <button
-                                onClick={handleLoadModel}
-                                disabled={!selectedModel || loadModel.isPending}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 transition-all"
-                            >
-                                {loadModel.isPending ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                    <Zap className="w-3.5 h-3.5" />
-                                )}
-                                Load
-                            </button>
-                            <button
-                                onClick={() => selectedModel && handleUnloadModel(selectedModel)}
-                                disabled={!selectedModel || !isModelLoaded(selectedModel) || unloadModel.isPending}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 disabled:opacity-40 transition-all"
-                            >
-                                {unloadModel.isPending ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                    <X className="w-3.5 h-3.5" />
-                                )}
-                                Unload
-                            </button>
-                        </div>
+                        {/* Load / Unload — context-aware */}
+                        {(() => {
+                            const modelLoaded = selectedModel && isModelLoaded(selectedModel);
+                            return (
+                                <div className="flex gap-2 mt-2">
+                                    {modelLoaded ? (
+                                        <button
+                                            disabled
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 cursor-default transition-all"
+                                        >
+                                            <Check className="w-3.5 h-3.5" />
+                                            Loaded
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleLoadModel}
+                                            disabled={!selectedModel || loadModel.isPending || (selectedModelInfo && !selectedModelInfo.is_chat_capable)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 transition-all"
+                                        >
+                                            {loadModel.isPending ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    Loading…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Zap className="w-3.5 h-3.5" />
+                                                    Load
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => selectedModel && handleUnloadModel(selectedModel)}
+                                        disabled={!modelLoaded || unloadModel.isPending}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 disabled:opacity-40 transition-all"
+                                    >
+                                        {unloadModel.isPending ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Unloading…
+                                            </>
+                                        ) : (
+                                            <>
+                                                <X className="w-3.5 h-3.5" />
+                                                Unload
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        })()}
                     </section>
 
                     {/* Currently Loaded */}
