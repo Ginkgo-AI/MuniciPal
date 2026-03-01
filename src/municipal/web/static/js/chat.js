@@ -253,43 +253,206 @@
         sendButton.disabled = true;
 
         appendMessage("user", text.trim());
-        showLoading();
         announce("Sending your question. Please wait.");
 
-        apiPost("/api/chat", {
-            session_id: sessionId,
-            message: text.trim(),
-        })
-            .then(function (data) {
-                removeLoading();
-                appendMessage("assistant", data.response, {
-                    citations: data.citations,
-                    confidence: data.confidence,
-                    low_confidence: data.low_confidence,
-                });
+        // Create a placeholder assistant message for streaming
+        removeWelcome();
+        var wrapper = document.createElement("div");
+        wrapper.className = "message message--assistant";
+        wrapper.setAttribute("role", "article");
+        wrapper.id = "streaming-message";
 
-                var confPct = Math.round((data.confidence || 0) * 100);
-                var announceText = "Assistant responded with " + confPct + "% confidence.";
-                if (data.low_confidence) {
-                    announceText += " Warning: low confidence answer.";
+        var label = document.createElement("div");
+        label.className = "message__label";
+        label.textContent = "Assistant";
+        wrapper.appendChild(label);
+
+        var bubble = document.createElement("div");
+        bubble.className = "message__bubble";
+        bubble.textContent = "";
+        wrapper.appendChild(bubble);
+
+        chatMessages.appendChild(wrapper);
+        scrollToBottom();
+
+        // Stream from the SSE endpoint
+        fetch("/api/chat/stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId, message: text.trim() }),
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Stream request failed (" + response.status + ")");
                 }
-                if (data.citations && data.citations.length > 0) {
-                    announceText += " " + data.citations.length + " source(s) cited.";
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var buffer = "";
+                var metadata = {};
+                var citations = [];
+
+                function processChunk() {
+                    return reader.read().then(function (result) {
+                        if (result.done) {
+                            // Stream finished — add metadata to the message
+                            finishStreaming(wrapper, bubble, metadata, citations);
+                            return;
+                        }
+
+                        buffer += decoder.decode(result.value, { stream: true });
+                        var lines = buffer.split("\n");
+                        buffer = lines.pop(); // Keep incomplete line in buffer
+
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (!line.startsWith("data: ")) continue;
+
+                            try {
+                                var event = JSON.parse(line.substring(6));
+                                if (event.type === "token") {
+                                    bubble.textContent += event.data;
+                                    scrollToBottom();
+                                } else if (event.type === "citations") {
+                                    citations = event.data;
+                                } else if (event.type === "metadata") {
+                                    metadata = event.data;
+                                } else if (event.type === "error") {
+                                    bubble.textContent += "\n\nError: " + event.data;
+                                } else if (event.type === "done") {
+                                    finishStreaming(wrapper, bubble, metadata, citations);
+                                    return;
+                                }
+                            } catch (e) {
+                                // Skip malformed JSON lines
+                            }
+                        }
+
+                        return processChunk();
+                    });
                 }
-                announce(announceText);
+
+                return processChunk();
             })
             .catch(function (err) {
-                removeLoading();
-                showError(
-                    "Sorry, something went wrong. Please try again or contact city staff."
-                );
-                console.error("Chat error:", err);
+                // Fallback: remove streaming placeholder and show error
+                var streamEl = document.getElementById("streaming-message");
+                if (streamEl) streamEl.remove();
+                showError("Sorry, something went wrong. Please try again or contact city staff.");
+                console.error("Stream error:", err);
             })
             .finally(function () {
                 isLoading = false;
                 sendButton.disabled = false;
                 chatInput.focus();
             });
+    }
+
+    function finishStreaming(wrapper, bubble, metadata, citations) {
+        wrapper.removeAttribute("id"); // Remove the streaming-message id
+
+        // Add confidence indicator
+        if (metadata && typeof metadata.confidence === "number") {
+            var conf = metadata.confidence;
+            var level = conf >= 0.7 ? "high" : conf >= 0.5 ? "medium" : "low";
+            var pct = Math.round(conf * 100);
+
+            var indicator = document.createElement("div");
+            indicator.className = "confidence-indicator confidence--" + level;
+            indicator.setAttribute("aria-label", "Confidence: " + pct + "% (" + level + ")");
+
+            var bar = document.createElement("div");
+            bar.className = "confidence-bar";
+            var fill = document.createElement("div");
+            fill.className = "confidence-bar__fill";
+            fill.style.width = pct + "%";
+            bar.appendChild(fill);
+
+            var text = document.createElement("span");
+            text.textContent = pct + "% confidence";
+
+            indicator.appendChild(bar);
+            indicator.appendChild(text);
+            wrapper.appendChild(indicator);
+        }
+
+        // Add low confidence warning
+        if (metadata && metadata.low_confidence) {
+            var warning = document.createElement("div");
+            warning.className = "low-confidence-warning";
+            warning.setAttribute("role", "alert");
+            warning.textContent = "This answer has low confidence. Please verify with city staff.";
+            wrapper.appendChild(warning);
+        }
+
+        // Add citations
+        if (citations && citations.length > 0) {
+            var citationsDiv = document.createElement("div");
+            citationsDiv.className = "citations";
+
+            var toggleId = "citations-" + Date.now();
+            var listId = "citations-list-" + Date.now();
+
+            var toggleBtn = document.createElement("button");
+            toggleBtn.className = "citations__toggle";
+            toggleBtn.setAttribute("aria-expanded", "false");
+            toggleBtn.setAttribute("aria-controls", listId);
+            toggleBtn.id = toggleId;
+            toggleBtn.textContent = "Sources (" + citations.length + ")";
+            toggleBtn.addEventListener("click", function () {
+                var expanded = this.getAttribute("aria-expanded") === "true";
+                this.setAttribute("aria-expanded", String(!expanded));
+                var list = document.getElementById(this.getAttribute("aria-controls"));
+                if (list) list.hidden = expanded;
+            });
+
+            var list = document.createElement("ul");
+            list.className = "citations__list";
+            list.id = listId;
+            list.hidden = true;
+            list.setAttribute("aria-labelledby", toggleId);
+
+            citations.forEach(function (cite) {
+                var li = document.createElement("li");
+                li.className = "citation-item";
+
+                var source = document.createElement("div");
+                source.className = "citation-item__source";
+                source.textContent = cite.source;
+                li.appendChild(source);
+
+                if (cite.section) {
+                    var section = document.createElement("div");
+                    section.className = "citation-item__section";
+                    section.textContent = "Section: " + cite.section;
+                    li.appendChild(section);
+                }
+
+                if (cite.quote) {
+                    var quote = document.createElement("div");
+                    quote.className = "citation-item__quote";
+                    quote.textContent = cite.quote;
+                    li.appendChild(quote);
+                }
+
+                list.appendChild(li);
+            });
+
+            citationsDiv.appendChild(toggleBtn);
+            citationsDiv.appendChild(list);
+            wrapper.appendChild(citationsDiv);
+        }
+
+        // Announce to screen readers
+        var confPct = Math.round((metadata.confidence || 0) * 100);
+        var announceText = "Assistant responded with " + confPct + "% confidence.";
+        if (metadata.low_confidence) {
+            announceText += " Warning: low confidence answer.";
+        }
+        if (citations && citations.length > 0) {
+            announceText += " " + citations.length + " source(s) cited.";
+        }
+        announce(announceText);
+        scrollToBottom();
     }
 
     // --- Auto-resize Textarea ---

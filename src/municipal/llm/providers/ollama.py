@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from typing import AsyncIterator
 
 import httpx
 
@@ -45,6 +47,44 @@ class OllamaClient(LLMClient):
 
         resp = await self._post("/api/generate", payload)
         return resp["response"]
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        temperature: float = 0.1,
+    ) -> AsyncIterator[str]:
+        """Stream tokens from Ollama via NDJSON streaming."""
+        payload: dict = {
+            "model": self.config.model,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+                "num_ctx": 4096,
+                "num_predict": 256,
+            },
+        }
+        if system_prompt is not None:
+            payload["system"] = system_prompt
+
+        async with self._http.stream(
+            "POST", "/api/generate", json=payload
+        ) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                    token = data.get("response", "")
+                    if token:
+                        yield token
+                    if data.get("done", False):
+                        return
+                except json.JSONDecodeError:
+                    continue
 
     async def chat(
         self,

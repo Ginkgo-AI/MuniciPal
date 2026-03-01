@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from municipal.core.types import DataClassification
 from municipal.llm.client import LLMClient
+from municipal.rag.rerank import rerank
 from municipal.rag.retrieve import Retriever
 
 # Confidence threshold below which the kill-switch fires.
@@ -185,13 +186,17 @@ class CitationEngine:
             A CitedAnswer with the LLM response, citations, and confidence.
         """
         # Retrieve relevant chunks with ±1 neighboring context
+        # Over-fetch for re-ranking: retrieve 10, re-rank to 5
         results = self._retriever.retrieve_with_neighbors(
             query=question,
             collection=collection,
-            n_results=5,
+            n_results=10,
             neighbor_window=1,
             max_classification=max_classification,
         )
+
+        # Re-rank using keyword overlap + content quality scoring
+        results = rerank(query=question, results=results, final_count=5)
 
         if not results:
             return CitedAnswer(
@@ -246,3 +251,99 @@ class CitationEngine:
             sources_used=len(cited_sources) if cited_sources else len(results),
             low_confidence=low_confidence,
         )
+
+    async def answer_stream(
+        self,
+        question: str,
+        collection: str,
+        max_classification: DataClassification = DataClassification.PUBLIC,
+        history: list[dict] | None = None,
+    ):
+        """Stream an answer token-by-token as an async generator.
+
+        Yields dicts suitable for SSE events:
+          {"type": "token", "data": "..."}
+          {"type": "citations", "data": [...]}
+          {"type": "metadata", "data": {"confidence": ..., "low_confidence": ...}}
+          {"type": "done"}
+        """
+        import re as _re
+
+        # Retrieve and re-rank
+        results = self._retriever.retrieve_with_neighbors(
+            query=question,
+            collection=collection,
+            n_results=10,
+            neighbor_window=1,
+            max_classification=max_classification,
+        )
+        results = rerank(query=question, results=results, final_count=5)
+
+        if not results:
+            yield {
+                "type": "token",
+                "data": "I cannot find the specific policy. Let me connect you with a staff member.",
+            }
+            yield {"type": "metadata", "data": {"confidence": 0.0, "low_confidence": True}}
+            yield {"type": "done"}
+            return
+
+        # Build prompt
+        context_block = _build_context_block(results)
+        history_block = _format_history(history)
+        system_prompt = _SYSTEM_PROMPT.format(
+            context=context_block,
+            history_block=history_block,
+        )
+
+        # Stream tokens from LLM
+        full_answer = ""
+        async for token in self._llm.generate_stream(
+            prompt=question,
+            system_prompt=system_prompt,
+            temperature=0.1,
+        ):
+            # Strip think tokens progressively
+            full_answer += token
+            yield {"type": "token", "data": token}
+
+        # Clean up think tokens from the accumulated answer
+        clean_answer = _strip_think_tokens(full_answer)
+
+        # Parse citations from the full answer
+        citations = _parse_citations(clean_answer, results)
+
+        # Compute confidence
+        cited_sources = {c.source for c in citations}
+        cited_confidences = [
+            r.confidence_score for r in results if r.source in cited_sources
+        ]
+        if cited_confidences:
+            avg_confidence = sum(cited_confidences) / len(cited_confidences)
+        else:
+            avg_confidence = sum(r.confidence_score for r in results) / len(results)
+
+        low_confidence = avg_confidence < _LOW_CONFIDENCE_THRESHOLD
+
+        # Emit citations and metadata
+        yield {
+            "type": "citations",
+            "data": [
+                {
+                    "source": c.source,
+                    "section": c.section,
+                    "quote": c.quote,
+                    "relevance_score": c.relevance_score,
+                }
+                for c in citations
+            ],
+        }
+        yield {
+            "type": "metadata",
+            "data": {
+                "confidence": avg_confidence,
+                "low_confidence": low_confidence,
+                "sources_used": len(cited_sources) if cited_sources else len(results),
+            },
+        }
+        yield {"type": "done"}
