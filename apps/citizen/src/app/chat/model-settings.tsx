@@ -22,7 +22,13 @@ import {
     ChevronDown,
     MemoryStick,
     Shield,
+    Eye,
+    Type,
+    Code2,
+    Binary,
+    AlertTriangle,
 } from "lucide-react";
+import type { ModelInfo } from "@/hooks/use-models";
 
 interface ModelSettingsProps {
     isOpen: boolean;
@@ -48,6 +54,26 @@ const KEEP_ALIVE_OPTIONS = [
     { label: "Unload immediately", value: "0" },
 ];
 
+const TYPE_BADGES: Record<string, { icon: typeof Type; label: string; color: string }> = {
+    text: { icon: Type, label: "Text", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+    vision: { icon: Eye, label: "Vision", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+    code: { icon: Code2, label: "Code", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+    embedding: { icon: Binary, label: "Embedding", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+};
+
+function ModelTypeBadge({ type }: { type: string }) {
+    const badge = TYPE_BADGES[type] || TYPE_BADGES.text;
+    const Icon = badge.icon;
+    return (
+        <span
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold border ${badge.color}`}
+        >
+            <Icon className="w-2.5 h-2.5" />
+            {badge.label}
+        </span>
+    );
+}
+
 export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
     const { data: availableData } = useAvailableModels();
     const { data: loadedData } = useLoadedModels();
@@ -66,10 +92,20 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
     const loaded = loadedData?.models ?? [];
     const recommendations = recommendedData?.recommendations ?? [];
 
-    // Set default from first available model
+    // Sort: chat-capable first, then embedding at the bottom
+    const sortedModels = [...available].sort((a, b) => {
+        if (a.is_chat_capable && !b.is_chat_capable) return -1;
+        if (!a.is_chat_capable && b.is_chat_capable) return 1;
+        return 0;
+    });
+
+    const selectedModelInfo = available.find((m) => m.name === selectedModel);
+
+    // Set default from first chat-capable model
     useEffect(() => {
         if (available.length > 0 && !selectedModel) {
-            setSelectedModel(available[0].name);
+            const chatModel = available.find((m) => m.is_chat_capable);
+            setSelectedModel(chatModel?.name ?? available[0].name);
         }
     }, [available, selectedModel]);
 
@@ -166,14 +202,15 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
 
                             {showModelDropdown && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-lg z-10 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-                                    {available.map((model) => (
+                                    {sortedModels.map((model) => (
                                         <button
                                             key={model.name}
                                             onClick={() => {
                                                 setSelectedModel(model.name);
                                                 setShowModelDropdown(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[var(--accent)] transition-colors text-left"
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[var(--accent)] transition-colors text-left ${!model.is_chat_capable ? "opacity-50" : ""
+                                                }`}
                                         >
                                             {isModelLoaded(model.name) ? (
                                                 <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400 shrink-0" />
@@ -181,7 +218,10 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
                                                 <Circle className="w-2 h-2 text-[var(--muted-foreground)]/30 shrink-0" />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium truncate">{model.name}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="font-medium truncate">{model.name}</p>
+                                                    <ModelTypeBadge type={model.model_type} />
+                                                </div>
                                                 <p className="text-[10px] text-[var(--muted-foreground)]">
                                                     {model.size_gb} GB · {model.parameter_size || model.family}
                                                     {model.quantization ? ` · ${model.quantization}` : ""}
@@ -200,6 +240,19 @@ export function ModelSettings({ isOpen, onClose }: ModelSettingsProps) {
                                 </div>
                             )}
                         </div>
+
+                        {/* Embedding model warning */}
+                        {selectedModelInfo && !selectedModelInfo.is_chat_capable && (
+                            <div className="flex items-start gap-2 mt-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-semibold">Not available for chat</p>
+                                    <p className="text-[10px] opacity-80 mt-0.5">
+                                        Embedding models generate vector representations, not text responses. Select a Text, Vision, or Code model for chat.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Load / Unload */}
                         <div className="flex gap-2 mt-2">

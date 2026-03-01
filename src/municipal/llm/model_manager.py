@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import platform
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 import httpx
@@ -17,6 +18,57 @@ import httpx
 from municipal.core.config import LLMConfig
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Model type classification
+# ---------------------------------------------------------------------------
+
+
+class ModelType(str, Enum):
+    """Classification of model capabilities."""
+
+    TEXT = "text"
+    VISION = "vision"
+    EMBEDDING = "embedding"
+    CODE = "code"
+
+
+# Families / name fragments that indicate embedding models
+_EMBEDDING_FAMILIES = {"nomic-bert", "bert", "all-minilm", "snowflake-arctic-embed"}
+_EMBEDDING_NAME_PATTERNS = ("embed", "e5-", "bge-", "gte-", "minilm", "sentence-")
+
+# Families / name fragments that indicate vision models
+_VISION_FAMILIES = {"llava", "bakllava", "moondream", "llava-llama3"}
+_VISION_NAME_PATTERNS = ("llava", "vision", "moondream", "minicpm-v")
+
+# Families / name fragments that indicate code-specialist models
+_CODE_NAME_PATTERNS = ("codellama", "code-", "starcoder", "codestral", "codegemma")
+
+
+def classify_model(name: str, family: str) -> ModelType:
+    """Infer model type from its name and family metadata."""
+    name_lower = name.lower()
+    family_lower = family.lower()
+
+    # Embedding check (highest priority — these can't chat)
+    if family_lower in _EMBEDDING_FAMILIES:
+        return ModelType.EMBEDDING
+    if any(p in name_lower for p in _EMBEDDING_NAME_PATTERNS):
+        return ModelType.EMBEDDING
+
+    # Vision check
+    if family_lower in _VISION_FAMILIES:
+        return ModelType.VISION
+    if any(p in name_lower for p in _VISION_NAME_PATTERNS):
+        return ModelType.VISION
+
+    # Code check
+    if any(p in name_lower for p in _CODE_NAME_PATTERNS):
+        return ModelType.CODE
+
+    # Default: general text/chat model
+    return ModelType.TEXT
 
 
 # ---------------------------------------------------------------------------
@@ -36,11 +88,16 @@ class ModelInfo:
     format: str = ""
     modified_at: str = ""
     digest: str = ""
+    model_type: str = "text"
     details: dict[str, Any] = field(default_factory=dict)
 
     @property
     def size_gb(self) -> float:
         return round(self.size_bytes / (1024**3), 2)
+
+    @property
+    def is_chat_capable(self) -> bool:
+        return self.model_type in (ModelType.TEXT, ModelType.VISION, ModelType.CODE)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -53,6 +110,8 @@ class ModelInfo:
             "format": self.format,
             "modified_at": self.modified_at,
             "digest": self.digest,
+            "model_type": self.model_type,
+            "is_chat_capable": self.is_chat_capable,
         }
 
 
@@ -178,16 +237,20 @@ class ModelManager:
         models: list[ModelInfo] = []
         for m in data.get("models", []):
             details = m.get("details", {})
+            name = m.get("name", "")
+            family = details.get("family", "")
+            model_type = classify_model(name, family)
             models.append(
                 ModelInfo(
-                    name=m.get("name", ""),
+                    name=name,
                     size_bytes=m.get("size", 0),
                     parameter_size=details.get("parameter_size", ""),
-                    family=details.get("family", ""),
+                    family=family,
                     quantization=details.get("quantization_level", ""),
                     format=details.get("format", ""),
                     modified_at=m.get("modified_at", ""),
                     digest=m.get("digest", ""),
+                    model_type=model_type.value,
                     details=details,
                 )
             )

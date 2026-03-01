@@ -17,7 +17,39 @@ from municipal.llm.model_manager import (
     LoadedModelInfo,
     ModelRecommendation,
     SystemResources,
+    ModelType,
+    classify_model,
 )
+
+
+# =========================================================================
+# classify_model Tests
+# =========================================================================
+
+
+class TestClassifyModel:
+    def test_embedding_by_family(self):
+        assert classify_model("nomic-embed-text:latest", "nomic-bert") == ModelType.EMBEDDING
+
+    def test_embedding_by_name(self):
+        assert classify_model("all-minilm-l6:latest", "unknown") == ModelType.EMBEDDING
+        assert classify_model("bge-large:latest", "unknown") == ModelType.EMBEDDING
+
+    def test_vision_by_family(self):
+        assert classify_model("llava:7b", "llava") == ModelType.VISION
+
+    def test_vision_by_name(self):
+        assert classify_model("llava-phi3:latest", "phi3") == ModelType.VISION
+
+    def test_code_by_name(self):
+        assert classify_model("codellama:7b", "llama") == ModelType.CODE
+        assert classify_model("starcoder2:3b", "starcoder") == ModelType.CODE
+
+    def test_text_default(self):
+        assert classify_model("gemma3:4b", "gemma3") == ModelType.TEXT
+        assert classify_model("qwen3:8b", "qwen3") == ModelType.TEXT
+        assert classify_model("deepseek-r1:8b", "llama") == ModelType.TEXT
+        assert classify_model("phi3.5:latest", "phi3") == ModelType.TEXT
 from municipal.web.app import create_app
 
 
@@ -126,7 +158,8 @@ class TestModelManager:
                     "name": "gemma3:4b",
                     "size": 2_700_000_000,
                     "size_vram": 1_500_000_000,
-                    "details": {"num_ctx": 8192},
+                    "context_length": 8192,
+                    "details": {},
                     "expires_at": "2025-01-01T01:00:00Z",
                 }
             ]

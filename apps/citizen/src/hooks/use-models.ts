@@ -15,6 +15,8 @@ interface ModelInfo {
     format: string;
     modified_at: string;
     digest: string;
+    model_type: "text" | "vision" | "embedding" | "code";
+    is_chat_capable: boolean;
 }
 
 interface LoadedModelInfo {
