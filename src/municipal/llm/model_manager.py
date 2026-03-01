@@ -313,7 +313,12 @@ class ModelManager:
             payload["options"] = {"num_ctx": num_ctx}
 
         try:
-            resp = await self._http.post("/api/generate", json=payload)
+            # Model loading can take minutes for large models — use extended timeout
+            resp = await self._http.post(
+                "/api/generate",
+                json=payload,
+                timeout=httpx.Timeout(300.0),  # 5 minute timeout for loading
+            )
             resp.raise_for_status()
             return {"status": "loaded", "model": name, "keep_alive": keep_alive}
         except (httpx.HTTPError, httpx.TimeoutException) as exc:
@@ -329,7 +334,11 @@ class ModelManager:
             "keep_alive": 0,
         }
         try:
-            resp = await self._http.post("/api/generate", json=payload)
+            resp = await self._http.post(
+                "/api/generate",
+                json=payload,
+                timeout=httpx.Timeout(60.0),  # Unloading is faster but still give time
+            )
             resp.raise_for_status()
             return {"status": "unloaded", "model": name}
         except (httpx.HTTPError, httpx.TimeoutException) as exc:
@@ -389,10 +398,15 @@ class ModelManager:
         if not models:
             return []
 
+        # Only recommend chat-capable models — embedding models aren't useful here
+        chat_models = [m for m in models if m.is_chat_capable]
+        if not chat_models:
+            return []
+
         available_ram = resources.available_ram_bytes
         recommendations: list[ModelRecommendation] = []
 
-        for model in models:
+        for model in chat_models:
             # Rough heuristic: model needs ~1.2× its file size in RAM
             estimated_ram = int(model.size_bytes * 1.2)
 
