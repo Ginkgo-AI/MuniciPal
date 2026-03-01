@@ -60,6 +60,7 @@ class RAGPipeline:
         question: str,
         collection: str = "ordinances",
         max_classification: DataClassification = DataClassification.PUBLIC,
+        history: list[dict] | None = None,
     ) -> CitedAnswer:
         """Ask a question and get a cited answer.
 
@@ -67,6 +68,7 @@ class RAGPipeline:
             question: The resident's question.
             collection: The vector store collection to search.
             max_classification: Maximum classification level for retrieval.
+            history: Optional list of prior messages for conversation context.
 
         Returns:
             A CitedAnswer with the LLM response, citations, and confidence.
@@ -75,6 +77,7 @@ class RAGPipeline:
             question=question,
             collection=collection,
             max_classification=max_classification,
+            history=history,
         )
 
 

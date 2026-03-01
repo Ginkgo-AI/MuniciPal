@@ -117,12 +117,23 @@ class ChatService:
         user_msg = ChatMessage(role=MessageRole.USER, content=user_message)
         await resolve(self._sessions.add_message(session_id, user_msg))
 
-        # 2. Call RAG pipeline
+        # 2. Build conversation history from prior messages in this session
+        history: list[dict] = []
+        session_refreshed = await resolve(self._sessions.get_session(session_id))
+        if session_refreshed and session_refreshed.messages:
+            for msg in session_refreshed.messages[:-1]:  # Exclude the just-added message
+                history.append({
+                    "role": msg.role.value,
+                    "content": msg.content,
+                })
+
+        # 3. Call RAG pipeline with history
         try:
             cited_answer = await self._rag.ask(
                 question=user_message,
                 collection=collection,
                 max_classification=DataClassification.PUBLIC,
+                history=history if history else None,
             )
         except Exception:
             logger.exception("RAG pipeline error for session %s", session_id)

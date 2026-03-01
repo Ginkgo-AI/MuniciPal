@@ -18,7 +18,13 @@ from municipal.core.types import DataClassification
 from municipal.vectordb.store import Document, VectorStore
 
 # Maximum chunk size in characters before we force a split.
-_MAX_CHUNK_CHARS = 500
+_MAX_CHUNK_CHARS = 1000
+
+# Character overlap between adjacent chunks to preserve context.
+_CHUNK_OVERLAP = 150
+
+# Minimum useful chunk size — skip fragments shorter than this.
+_MIN_CHUNK_CHARS = 50
 
 # Supported file extensions for ingestion.
 _SUPPORTED_EXTENSIONS = {".txt", ".md"}
@@ -78,22 +84,28 @@ def _split_on_sentence_boundary(text: str, max_chars: int = _MAX_CHUNK_CHARS) ->
     return chunks if chunks else [text]
 
 
-def chunk_text(text: str, max_chunk_chars: int = _MAX_CHUNK_CHARS) -> list[dict[str, Any]]:
+def chunk_text(
+    text: str,
+    max_chunk_chars: int = _MAX_CHUNK_CHARS,
+    chunk_overlap: int = _CHUNK_OVERLAP,
+    min_chunk_chars: int = _MIN_CHUNK_CHARS,
+) -> list[dict[str, Any]]:
     """Split *text* into chunks suitable for vector storage.
 
     Strategy:
     1. Split on double newlines (paragraphs).
     2. If a paragraph exceeds *max_chunk_chars*, split on sentence boundaries.
     3. Attach detected markdown section headers to each chunk.
+    4. Skip fragments shorter than *min_chunk_chars*.
+    5. Apply *chunk_overlap* character overlap between adjacent chunks.
 
     Returns a list of dicts with keys ``text``, ``section_header``, and
     ``chunk_index``.
     """
     paragraphs = re.split(r"\n{2,}", text)
 
-    chunks: list[dict[str, Any]] = []
+    raw_chunks: list[dict[str, Any]] = []
     current_header: str | None = None
-    idx = 0
 
     for para in paragraphs:
         para = para.strip()
@@ -108,14 +120,27 @@ def chunk_text(text: str, max_chunk_chars: int = _MAX_CHUNK_CHARS) -> list[dict[
         sub_chunks = _split_on_sentence_boundary(para, max_chunk_chars)
         for sc in sub_chunks:
             sc = sc.strip()
-            if not sc:
+            if not sc or len(sc) < min_chunk_chars:
                 continue
-            chunks.append({
+            raw_chunks.append({
                 "text": sc,
                 "section_header": current_header,
-                "chunk_index": idx,
             })
-            idx += 1
+
+    # Apply overlap: prepend the tail of the previous chunk to each chunk
+    chunks: list[dict[str, Any]] = []
+    for i, rc in enumerate(raw_chunks):
+        chunk_text_str = rc["text"]
+        if i > 0 and chunk_overlap > 0:
+            prev_text = raw_chunks[i - 1]["text"]
+            overlap_text = prev_text[-chunk_overlap:].lstrip()
+            if overlap_text and not chunk_text_str.startswith(overlap_text[:20]):
+                chunk_text_str = overlap_text + " " + chunk_text_str
+        chunks.append({
+            "text": chunk_text_str,
+            "section_header": rc["section_header"],
+            "chunk_index": i,
+        })
 
     return chunks
 

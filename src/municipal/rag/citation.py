@@ -30,7 +30,7 @@ If you cannot find the answer in the provided context, say: \
 
 Do NOT include any <think> or reasoning tags in your answer.
 
-Context:
+{history_block}Context:
 {context}
 
 /no_think
@@ -66,6 +66,29 @@ class CitedAnswer(BaseModel):
     confidence: float = 0.0
     sources_used: int = 0
     low_confidence: bool = False
+
+
+def _format_history(history: list[dict] | None, max_turns: int = 5) -> str:
+    """Format conversation history into a prompt block.
+
+    Returns an empty string if no history, or a formatted block like:
+        Conversation History:
+        User: ...
+        Assistant: ...
+    """
+    if not history:
+        return ""
+    # Take last N turns
+    recent = history[-max_turns * 2:] if len(history) > max_turns * 2 else history
+    lines = []
+    for msg in recent:
+        role = msg.get("role", "user").capitalize()
+        content = msg.get("content", "")
+        if content:
+            lines.append(f"{role}: {content}")
+    if not lines:
+        return ""
+    return "Conversation History:\n" + "\n".join(lines) + "\n\n"
 
 
 def _build_context_block(results: list[Any]) -> str:
@@ -143,27 +166,30 @@ class CitationEngine:
         question: str,
         collection: str,
         max_classification: DataClassification = DataClassification.PUBLIC,
+        history: list[dict] | None = None,
     ) -> CitedAnswer:
         """Answer a question with citations from the vector store.
 
-        Retrieves relevant chunks, builds a prompt, calls the LLM, parses
-        citations, and computes overall confidence. If confidence is below
-        the threshold, sets ``low_confidence=True`` to trigger the
-        hallucination kill-switch.
+        Retrieves relevant chunks (with neighboring context), builds a prompt
+        including conversation history, calls the LLM, parses citations, and
+        computes overall confidence. If confidence is below the threshold,
+        sets ``low_confidence=True`` to trigger the hallucination kill-switch.
 
         Args:
             question: The resident's question.
             collection: The vector store collection to search.
             max_classification: Maximum classification level for retrieval.
+            history: Optional list of prior messages [{"role": ..., "content": ...}].
 
         Returns:
             A CitedAnswer with the LLM response, citations, and confidence.
         """
-        # Retrieve relevant chunks
-        results = self._retriever.retrieve(
+        # Retrieve relevant chunks with ±1 neighboring context
+        results = self._retriever.retrieve_with_neighbors(
             query=question,
             collection=collection,
-            n_results=2,
+            n_results=5,
+            neighbor_window=1,
             max_classification=max_classification,
         )
 
@@ -181,7 +207,11 @@ class CitationEngine:
 
         # Build prompt context
         context_block = _build_context_block(results)
-        system_prompt = _SYSTEM_PROMPT.format(context=context_block)
+        history_block = _format_history(history)
+        system_prompt = _SYSTEM_PROMPT.format(
+            context=context_block,
+            history_block=history_block,
+        )
 
         # Call LLM
         raw_answer = await self._llm.generate(
