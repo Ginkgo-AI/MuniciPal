@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from municipal.llm.client import LLMClient
     from municipal.web.mission_control import ShadowComparisonStore, ShadowModeManager
     from municipal.web.mission_control_v1 import SessionTakeoverManager
+    from municipal.repositories import resolve
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class ChatService:
         self,
         session_id: str,
         user_message: str,
-        collection: str = "default",
+        collection: str = "ordinances",
     ) -> ChatMessage:
         """Process a user message and return an assistant response.
 
@@ -93,14 +94,15 @@ class ChatService:
             KeyError: If the session_id does not exist.
         """
         # Verify session exists
-        session = self._sessions.get_session(session_id)
+        from municipal.repositories import resolve
+        session = await resolve(self._sessions.get_session(session_id))
         if session is None:
             raise KeyError(f"Session {session_id!r} not found")
 
         # Check for staff takeover
-        if self._takeover_manager and self._takeover_manager.is_taken_over(session_id):
+        if self._takeover_manager and await resolve(self._takeover_manager.is_taken_over(session_id)):
             user_msg = ChatMessage(role=MessageRole.USER, content=user_message)
-            self._sessions.add_message(session_id, user_msg)
+            await resolve(self._sessions.add_message(session_id, user_msg))
 
             takeover_msg = ChatMessage(
                 role=MessageRole.ASSISTANT,
@@ -108,19 +110,30 @@ class ChatService:
                 confidence=1.0,
                 low_confidence=False,
             )
-            self._sessions.add_message(session_id, takeover_msg)
+            await resolve(self._sessions.add_message(session_id, takeover_msg))
             return takeover_msg
 
         # 1. Log the user message
         user_msg = ChatMessage(role=MessageRole.USER, content=user_message)
-        self._sessions.add_message(session_id, user_msg)
+        await resolve(self._sessions.add_message(session_id, user_msg))
 
-        # 2. Call RAG pipeline
+        # 2. Build conversation history from prior messages in this session
+        history: list[dict] = []
+        session_refreshed = await resolve(self._sessions.get_session(session_id))
+        if session_refreshed and session_refreshed.messages:
+            for msg in session_refreshed.messages[:-1]:  # Exclude the just-added message
+                history.append({
+                    "role": msg.role.value,
+                    "content": msg.content,
+                })
+
+        # 3. Call RAG pipeline with history
         try:
             cited_answer = await self._rag.ask(
                 question=user_message,
                 collection=collection,
                 max_classification=DataClassification.PUBLIC,
+                history=history if history else None,
             )
         except Exception:
             logger.exception("RAG pipeline error for session %s", session_id)
@@ -134,7 +147,7 @@ class ChatService:
                 confidence=0.0,
                 low_confidence=True,
             )
-            self._sessions.add_message(session_id, error_msg)
+            await resolve(self._sessions.add_message(session_id, error_msg))
             return error_msg
 
         # 3. Build response content
@@ -161,10 +174,10 @@ class ChatService:
             confidence=cited_answer.confidence,
             low_confidence=cited_answer.low_confidence,
         )
-        self._sessions.add_message(session_id, assistant_msg)
+        await resolve(self._sessions.add_message(session_id, assistant_msg))
 
         # 5. Audit log
-        self._audit.log(
+        await resolve(self._audit.log(
             AuditEvent(
                 session_id=session_id,
                 actor="resident",
@@ -180,7 +193,7 @@ class ChatService:
                 },
                 data_sources=[c.source for c in cited_answer.citations],
             )
-        )
+        ))
 
         # 6. Fire-and-forget shadow comparison if active
         if (
@@ -227,6 +240,6 @@ class ChatService:
                 candidate_response=candidate_response,
                 diverged=diverged,
             )
-            self._comparison_store.add(result)  # type: ignore[union-attr]
+            await resolve(self._comparison_store.add(result))  # type: ignore[union-attr]
         except Exception:
             logger.exception("Shadow comparison failed for session %s", session_id)

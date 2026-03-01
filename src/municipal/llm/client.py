@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import abc
+from typing import AsyncIterator
 
 from municipal.core.config import LLMConfig
 
@@ -22,6 +23,17 @@ class LLMClient(abc.ABC):
         temperature: float = 0.1,
     ) -> str:
         """Generate a completion from a single prompt."""
+
+    @abc.abstractmethod
+    async def generate_stream(
+        self,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        temperature: float = 0.1,
+    ) -> AsyncIterator[str]:
+        """Stream tokens from a completion. Yields text chunks."""
+        yield ""  # pragma: no cover
 
     @abc.abstractmethod
     async def chat(

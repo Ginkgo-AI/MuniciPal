@@ -440,6 +440,85 @@ def create_app(
             low_confidence=msg.low_confidence or False,
         )
 
+    @app.post("/api/chat/stream")
+    async def chat_stream(body: ChatRequest):
+        """Stream a chat response via Server-Sent Events.
+
+        Sends events:
+          data: {"type": "token", "data": "..."}
+          data: {"type": "citations", "data": [...]}
+          data: {"type": "metadata", "data": {...}}
+          data: {"type": "done"}
+        """
+        import json as _json
+
+        from fastapi.responses import StreamingResponse
+
+        from municipal.chat.session import ChatMessage, MessageRole
+        from municipal.core.types import DataClassification
+        from municipal.repositories import resolve
+
+        # Verify session
+        session = await resolve(session_manager.get_session(body.session_id))
+        if session is None:
+            raise HTTPException(status_code=404, detail=f"Session {body.session_id!r} not found")
+
+        # Record the user message
+        user_msg = ChatMessage(role=MessageRole.USER, content=body.message)
+        await resolve(session_manager.add_message(body.session_id, user_msg))
+
+        # Build conversation history
+        history: list[dict] = []
+        session_refreshed = await resolve(session_manager.get_session(body.session_id))
+        if session_refreshed and session_refreshed.messages:
+            for msg in session_refreshed.messages[:-1]:
+                history.append({"role": msg.role.value, "content": msg.content})
+
+        async def event_generator():
+            full_response = ""
+            final_citations = []
+            final_metadata = {}
+            try:
+                async for event in rag_pipeline.citation_engine.answer_stream(
+                    question=body.message,
+                    collection="ordinances",
+                    max_classification=DataClassification.PUBLIC,
+                    history=history if history else None,
+                ):
+                    if event["type"] == "token":
+                        full_response += event["data"]
+                    elif event["type"] == "citations":
+                        final_citations = event["data"]
+                    elif event["type"] == "metadata":
+                        final_metadata = event["data"]
+                    yield f"data: {_json.dumps(event)}\n\n"
+            except Exception:
+                logging.getLogger(__name__).exception("Streaming error")
+                yield f'data: {_json.dumps({"type": "error", "data": "An error occurred"})}\n\n'
+                return
+
+            # Record the assistant message in the session
+            from municipal.rag.citation import _strip_think_tokens
+            clean = _strip_think_tokens(full_response)
+            assistant_msg = ChatMessage(
+                role=MessageRole.ASSISTANT,
+                content=clean,
+                citations=final_citations,
+                confidence=final_metadata.get("confidence", 0.0),
+                low_confidence=final_metadata.get("low_confidence", False),
+            )
+            await resolve(session_manager.add_message(body.session_id, assistant_msg))
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
     @app.post("/api/sessions", response_model=SessionInfo)
     async def create_session(body: SessionCreateRequest | None = None) -> SessionInfo:
         """Create a new chat session."""

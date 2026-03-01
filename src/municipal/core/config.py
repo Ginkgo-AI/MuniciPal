@@ -13,8 +13,8 @@ class LLMConfig(BaseSettings):
 
     provider: str = "ollama"
     base_url: str = "http://localhost:11434"
-    model: str = "llama3.1:8b"
-    timeout_seconds: int = 30
+    model: str = "gemma3:4b"
+    timeout_seconds: int = 120
     max_retries: int = 1
     api_key: str | None = None
     max_tokens: int = 2048
