@@ -31,7 +31,16 @@ router = APIRouter()
 
 
 def _require_staff(request: Request) -> None:
-    """Verify the request comes from an authenticated user (staff)."""
+    """Verify the request comes from an authenticated user (staff).
+
+    In dev mode (MUNICIPAL_ENV != 'production'), auth is bypassed so the
+    staff dashboard can be used without a full auth flow.
+    """
+    import os
+
+    if os.environ.get("MUNICIPAL_ENV") != "production":
+        return  # dev mode — allow all staff access
+
     auth_tier = getattr(request.state, "auth_tier", SessionType.ANONYMOUS)
     if auth_tier != SessionType.AUTHENTICATED:
         raise HTTPException(status_code=403, detail="Staff authentication required")

@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api";
 
-interface StaffSession {
+export interface StaffSession {
   session_id: string;
   session_type: string;
+  title?: string | null;
   created_at: string;
   last_active: string;
   message_count: number;
@@ -22,7 +23,8 @@ export function useStaffSessions() {
   return useQuery<StaffSession[]>({
     queryKey: ["staff-sessions"],
     queryFn: () => apiFetch("/staff/sessions", { token }),
-    refetchInterval: 10_000,
-    enabled: !!token,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }
