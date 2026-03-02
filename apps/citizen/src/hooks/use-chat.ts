@@ -37,7 +37,9 @@ export function useSession(sessionId: string | null) {
     queryKey: ["session", sessionId],
     queryFn: () => apiFetch(`/sessions/${sessionId}`),
     enabled: !!sessionId,
-    refetchInterval: 5_000,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -83,7 +85,9 @@ export function useSessionList() {
   return useQuery<SessionInfo[]>({
     queryKey: ["sessions"],
     queryFn: () => apiFetch("/sessions"),
-    refetchInterval: 10_000,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }
 

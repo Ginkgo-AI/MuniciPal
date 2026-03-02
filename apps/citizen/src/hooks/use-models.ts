@@ -62,7 +62,9 @@ export function useLoadedModels() {
     return useQuery<{ models: LoadedModelInfo[] }>({
         queryKey: ["models", "loaded"],
         queryFn: () => apiFetch("/models/loaded"),
-        refetchInterval: 10_000,
+        staleTime: 15_000,
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
     });
 }
 
